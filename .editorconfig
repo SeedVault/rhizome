@@ -1,0 +1,46 @@
+# EditorConfig helps developers define and maintain consistent coding styles
+# between different editors and IDEs
+
+# All Files
+[*]
+charset = utf-8
+end_of_line = LF
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Tab indentation (no size specified)
+[Makefile]
+indent_style = tab
+
+[*.{htm,html,twig}]
+indent_style = space
+indent_size = 2
+
+[*.js]
+indent_style = space
+indent_size = 2
+
+[*.json]
+indent_style = space
+indent_size = 4
+
+[*.{css,scss,less}]
+indent_style = space
+indent_size = 2
+
+[*.php]
+indent_style = space
+indent_size = 4
+
+[*.{yaml,yml}]
+indent_style = space
+indent_size = 4
+
+[*.py]
+indent_style = space
+indent_size = 4
+line_length = 79
+
+[*.{rst,ini,md}]
+indent_style = space
+indent_size = 4

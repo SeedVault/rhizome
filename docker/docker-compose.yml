@@ -1,0 +1,55 @@
+version: '3.7'
+
+networks:
+    botanic_lan:
+
+services:
+    mailhog:
+        image: mailhog/mailhog
+        networks:
+            - botanic_lan
+        ports:
+            - 1025:1025
+            - 8025:8025
+
+    chatscript:
+        build: ./chatscript/
+        networks:
+            - botanic_lan
+        ports:
+            - 1024:1024
+        tty: true
+        volumes:
+            - ./volumes/opt/ChatScript-master/LOGS:/opt/ChatScript-master/LOGS
+            - ./volumes/opt/ChatScript-master/TMP:/opt/ChatScript-master/TMP
+            - ./volumes/opt/ChatScript-master/USERS:/opt/ChatScript-master/USERS
+
+    mongo:
+        image: mongo
+        networks:
+            - botanic_lan
+        ports:
+            - 0.0.0.0:27017:27017
+        command: mongod --smallfiles --logpath=/dev/null
+        environment:
+            - MONGO_INITDB_ROOT_USERNAME=root
+            - MONGO_INITDB_ROOT_PASSWORD=supersecret
+            - MONGO_INITDB_DATABASE=bbot
+            - AUTH=yes
+        volumes:
+            - ./volumes/data/db:/data/db
+            - ./volumes/var/log/mongodb:/var/log/mongodb
+            - ./volumes/home/mongodb:/home/mongodb
+
+    mongo-express:
+        image: mongo-express
+        networks:
+            - botanic_lan
+        ports:
+            - 8081:8081
+        environment:
+            - ME_CONFIG_MONGODB_ADMINUSERNAME=root
+            - ME_CONFIG_MONGODB_ADMINPASSWORD=supersecret
+        depends_on:
+            - mongo
+

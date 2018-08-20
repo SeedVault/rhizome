@@ -1,0 +1,72 @@
+#
+# BBot configuration file
+# -----------------------
+#
+# Individual items in a list can be disabled by prepending them with the
+# comment character.
+#
+
+bbot:
+    environment: testing
+    config_path: <%= ENV['BBOT_CONFIG_PATH'] %>
+    default_engine: flow
+    engines:
+        flow:
+            plugin_class: flow.engine.Flow
+            dotbot_reader:
+                plugin_class: bbot.json_file_reader.JsonFileReader
+                filename: <%= ENV['BBOT_CONFIG_PATH'] %>/flow_dotbot.json
+            nodes_reader:
+                plugin_class: bbot.json_file_reader.JsonFileReader
+                filename: <%= ENV['BBOT_CONFIG_PATH'] %>/flow_script.json
+            session:
+                plugin_class: flow.mongodb.MongoDB
+                uri: <%= ENV['MONGODB_URI'] %>
+            extensions: [
+                'flow.extensions.buttons.Buttons',
+                'flow.extensions.media.Media',
+                'flow.extensions.plain_text_eq_match.PlainTextEqMatch',
+                'flow.extensions.regex_match.RegexMatch',
+                'flow.extensions.send_email.SendEmail',
+                'flow.extensions.text.Text',
+                'flow.extensions.variable_eval.VariableEval'
+            ]
+            # extensions:
+            #    media:
+            #        plugin_class: flow.extensions.media.Media
+
+# Logging
+# See https://docs.python.org/3.7/library/logging.config.html#configuration-dictionary-schema
+logging:
+    version: 1
+
+    root:
+        level: NOTSET
+        handlers: [console]
+
+    loggers:
+        flow:
+            level: NOTSET
+            handlers: [console]
+            qualname: flow
+            propagate: false
+
+    handlers:
+        console:
+            class: logging.StreamHandler
+            stream: ext://sys.stdout
+            formatter: simpleFormatter
+            level: NOTSET
+        logfile:
+            class: logging.FileHandler
+            filename: /tmp/bbot.log
+            formatter: simpleFormatter
+            level: NOTSET
+
+    formatters:
+        simpleFormatter:
+            class: logging.Formatter
+            format: '%(name)s %(asctime)s %(levelname)s %(message)s'
+            datefmt: '%d/%m/%Y %H:%M:%S'
+
+

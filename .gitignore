@@ -1,0 +1,46 @@
+# Unit test / coverage reports
+htmlcov/
+.coverage
+.tox
+nosetests.xml
+
+# Temp
+.DS_Store
+*.pyc
+*.pyo
+__pycache__/
+instance/
+.cache/
+.pytest_cache/
+.mypy_cache/
+*.swp
+*~
+*.log
+
+# pyreverse
+classes.dot
+packages.dot
+
+# Environments
+venv/
+.env
+
+# Editors
+.idea/
+.vscode/
+.code-workspace
+
+# Packages
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+var
+sdist
+develop-eggs
+.installed.cfg
+lib
+lib64
+pip-log.txt

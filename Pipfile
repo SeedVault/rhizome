@@ -1,0 +1,22 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+flask = "*"
+python-dotenv = "*"
+requests = "*"
+pyyaml = "*"
+certifi = "*"
+pymongo = "*"
+
+[dev-packages]
+pytest = "*"
+pylint = "*"
+coverage = "*"
+mypy = "*"
+"pep257" = "*"
+
+[requires]
+python_version = "3.7"

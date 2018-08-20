@@ -1,0 +1,42 @@
+{
+  "bot": {
+      "ID": "",
+      "name": "Example bot",
+      "description": "05f079c46d096717604cc815f8eb5886",
+      "version": "1.0",
+      "language": "english",
+
+      "remuneration": {
+          "method": "free"
+      },
+      "author": {
+          "name": "John Doe",
+          "email": "test@example.com",
+          "seedAddress": "17mmd6HfhkFB2kLy2GBbWenn48YJf7mGwg"
+      },
+
+      "modes": {
+          "chat": true
+      },
+
+      "channels": {
+          "channel": {
+              "name": "web",
+              "enabled": true,
+              "mode": "chat"
+          }
+      },
+
+      "media": {
+          "thumbnail": "www.example.com"
+      },
+
+      "senderEmailAddress": "bbot@system.botanic.io",
+
+      "msCognitiveAPI": {
+          "luis": {
+              "appId": "29cdabe6-eda0-4957-95b3-a8723987c4f4"
+          }
+      }
+  }
+}
