@@ -11,6 +11,8 @@ See [the Wiki](https://github.com/SeedVault/SEEDtoken-IP/wiki) for more informat
 ## Work in progress
 The project is still under heavy development. The alpha version will be released during August 2018.
 
+A full working version of the bot engine could be found as proof of concept on [Botanic's repository](https://github.com/botanicinc/bbot-php) built with PHP language.
+
 ## Features
 - Runs .Flow v1.0 with flow extensions support for Text, Buttons, Media cards, Forms, Send email, Variable storing and comparisson operators.
 - Template engine support for text output compatible with Jinja2. Added weather report function.
