@@ -1,6 +1,6 @@
 """Regex match."""
 import re
-from flow.engine import Extension, FlowError
+from flow.chatbot_engine import Extension, FlowError
 
 class RegexMatch(Extension):
     """RegexMatch plugin - defined .flow function regexMatch to match with
@@ -14,13 +14,14 @@ class RegexMatch(Extension):
             'class': class_name, 'method': 'match'})
 
 
-    def match(self, pattern: str, input_text: str) -> bool:
+    def match(self, args: dict) -> bool:
         """
         Matches the 'pattern' with the user input
 
-        :param pattern: pattern rule
-        :param input_text: input text
+        :param args extension arguments        
         """
+        pattern = args[0]
+        input_text = args[1]
         cap = dict()
         result = re.search(pattern, input_text, cap)
         if result == 1: # matched

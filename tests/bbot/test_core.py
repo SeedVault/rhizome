@@ -1,9 +1,9 @@
 """Unit tests for module bbot.core"""
 import pytest
 from tests.bbot.conftest import create_test_bot
-from bbot.core import Plugin, Engine, EngineNotFoundError
+from bbot.core import Plugin, ChatbotEngine, ChatbotEngineNotFoundError
 
-class DummyEngine(Engine):
+class DummyEngine(ChatbotEngine):
     """Dummy engine."""
     def __init__(self, settings: dict) -> None:
         self.name = ''
@@ -18,7 +18,7 @@ class DummyEngine(Engine):
         :param request: A dictionary with input data.
         :return: A response to the input data.
         """
-        return Engine.create_response("dummy")
+        return ChatbotEngine.create_response("dummy")
 
 
 
@@ -39,7 +39,7 @@ def test_create_plugin_dynamically():
 
 def test_engine_not_found_error():
     """Engine not found error."""
-    with pytest.raises(EngineNotFoundError):
+    with pytest.raises(ChatbotEngineNotFoundError):
         _ = create_test_bot({}, "IT_DOESNT_EXIST")
 
 
@@ -48,8 +48,8 @@ def test_create_bot():
     config_settings = \
     {
         "bbot": {
-            "default_engine": "dummy",
-            "engines": {
+            "default_chatbot_engine": "dummy",
+            "chatbot_engines": {
                 "dummy": {
                     "plugin_class": "tests.bbot.test_core.DummyEngine",
                     "name": "engine",
@@ -75,11 +75,11 @@ def test_create_bot():
         }
     }
     bot = create_test_bot(config_settings)
-    info = config_settings["bbot"]["engines"]["dummy"]
+    info = config_settings["bbot"]["chatbot_engines"]["dummy"]
     assert bot.name == info["name"]
     assert bot.loader.name == info["loader"]["name"]
     assert bot.extensions["dummy_plugin_2"].name == \
            info["extensions"]["dummy_plugin_2"]["name"]
-    request = Engine.create_request("dummy", "Joe")
+    request = ChatbotEngine.create_request("dummy", "Joe")
     response = bot.get_response(request)
     assert response['output']['text'] == "dummy"

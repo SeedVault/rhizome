@@ -51,18 +51,18 @@ class Plugin(metaclass=abc.ABCMeta):
 
 
 @Plugin.register
-class Engine(Plugin, metaclass=abc.ABCMeta):
+class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
     """Abstract base class for chatbot engines."""
 
     @abc.abstractmethod
     def __init__(self, config: dict) -> None:
         """
-        Initialize the engine.
+        Initialize the chatbot engine.
 
         :param config: Configuration values for the instance.
         """
         self.logger = logging.Logger('bbot')  # type: logging.Logger
-        super(Engine, self).__init__(config)
+        super(ChatbotEngine, self).__init__(config)
 
 
     @abc.abstractmethod
@@ -78,35 +78,34 @@ class Engine(Plugin, metaclass=abc.ABCMeta):
 
 
     @staticmethod
-    def create_request(input_text: str, user_id: str, bot_id: str = "",
+    def create_request(chan_input: dict, user_id: str, bot_id: str = "",
                        org_id: str = "") -> dict:
         """
         Create a base request.
 
-        :param input_text: Input text
+        :param chan_input: Input from channel
         :param user_id: User ID
         :param bot_id: Bot ID
         :param org_id: Organization ID
         :return: A dictionary with the given data
         """
-        return {"user_id": user_id, "bot_id": bot_id, "org_id": org_id,
-                "input": {"text": input_text}}
+        return {"user_id": user_id, "bot_id": bot_id, "org_id": org_id, "input": chan_input}
 
 
     @staticmethod
-    def create_response(output_text: str) -> dict:
+    def create_response(output: dict) -> dict:
         """
         Create a base response.
 
-        :param output_text: Output text
+        :param output: Output from bot engine
         :return: A dictionary with the given data
         """
-        return {"output": {"text": output_text}}
+        return output
 
 
 
-class EngineNotFoundError(Exception):
-    """Engine not found."""
+class ChatbotEngineNotFoundError(Exception):
+    """ChatbotEngine not found."""
 
 
 @Plugin.register
@@ -132,21 +131,73 @@ class ConfigReader(Plugin, metaclass=abc.ABCMeta):
         """
         return {}
 
-def create_bot(config: dict, engine_name: str = "") -> Engine:
+@Plugin.register
+class TemplateEngine(Plugin, metaclass=abc.ABCMeta):
+    """Abstract base class for template engines."""
+
+    @abc.abstractmethod
+    def __init__(self, config: dict) -> None:
+        """
+        Initialize the template engine.
+
+        :param config: Configuration values for the instance.
+        """
+        super(TemplateEngine, self).__init__(config)
+
+
+    @abc.abstractmethod
+    def render(self) ->str:
+        """
+        Return a template rendered string.
+        """
+        return ""
+
+
+@Plugin.register
+class Cache(Plugin, metaclass=abc.ABCMeta):
+    """Abstract base class for cache."""
+
+    @abc.abstractmethod
+    def __init__(self, config: dict) -> None:
+        """
+        Initialize the cache.
+
+        :param config: Configuration values for the instance.
+        """
+        super(Cache, self).__init__(config)
+
+
+    @abc.abstractmethod
+    def set(self) -> None:
+        """
+        Set cache value
+        """
+        return ""
+
+    @abc.abstractmethod
+    def get(self) ->str:
+        """
+        Get cached value
+        """
+        return ""
+
+
+
+def create_bot(config: dict, chatbot_engine_name: str = "") -> ChatbotEngine:
     """
     Create a bot.
 
     :param config: Configuration settings.
-    :param engine_name: Name of engine to create. If ommited, defaults to value
-                        specified under the key "bbot.default_engine" in the
-                        configuration file.
-    :return: Instance of a subclass of Engine.
+    :param chatbot_engine_name: Name of engine to create. If ommited,
+                        defaults to value specified under the key
+                        "bbot.default_chatbot_engine" in configuration file.
+    :return: Instance of a subclass of ChatbotEngine.
     """
-    if not engine_name:
-        engine_name = config["bbot"]["default_engine"]
-    if not engine_name in config["bbot"]["engines"]:
-        raise EngineNotFoundError()
-    bot = Plugin.load_plugin(config["bbot"]["engines"][engine_name])
+    if not chatbot_engine_name:
+        chatbot_engine_name = config["bbot"]["default_chatbot_engine"]
+    if not chatbot_engine_name in config["bbot"]["chatbot_engines"]:
+        raise ChatbotEngineNotFoundError()
+    bot = Plugin.load_plugin(config["bbot"]["chatbot_engines"][chatbot_engine_name])
     logging.config.dictConfig(config['logging'])
-    bot.logger = logging.getLogger(engine_name)
+    bot.logger = logging.getLogger(chatbot_engine_name)
     return bot

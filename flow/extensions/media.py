@@ -1,5 +1,5 @@
 """Multimedia."""
-from flow.engine import Extension
+from flow.chatbot_engine import Extension
 
 class Media(Extension):
     """Media plugin - defines .flow functions video, image and audio"""
@@ -18,6 +18,7 @@ class Media(Extension):
             'class': class_name, 'method': 'get_response'})
 
 
-    def get_response(self, node):
+    def get_response(self, arg):
         """Get response for node."""
+        node = arg[0]
         self.flow.set_output('card', node['info'])

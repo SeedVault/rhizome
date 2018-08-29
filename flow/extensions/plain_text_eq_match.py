@@ -1,5 +1,5 @@
 """Plain text eq match."""
-from flow.engine import Extension
+from flow.chatbot_engine import Extension
 
 class PlainTextEqMatch(Extension):
     """PlainTextEqMatch plugin - defined .flow function plainTextEqMatch to

@@ -1,4 +1,5 @@
 """MongoDB repository."""
+import logging
 import json
 from typing import Any
 from pymongo import MongoClient, DeleteMany
@@ -25,9 +26,8 @@ class MongoDB(Session):
 
         :param user_id: User ID
         """
-        super().reset_all(user_id)
-        requests = [DeleteMany({'user_id': user_id})]
-        self.user_data.bulk_write(requests)
+        super().reset_all(user_id)        
+        self.user_data.delete_many({'userId': user_id})
 
 
     def get(self, user_id: str, key: str) -> Any:
@@ -39,8 +39,14 @@ class MongoDB(Session):
         """
         data = self.user_data.find_one({'userId': user_id})
         if data is None:
-            return None
-        return data[key]
+            return ""
+
+        var_value = self.get_dot_notation(data, key)
+        if var_value is None:
+            return ""
+
+        return var_value
+        
 
 
     def set(self, user_id: str, key: str, value: str) -> None:
@@ -64,5 +70,33 @@ class MongoDB(Session):
         :param value: Value to set
         """
         key = 'userVars.' + key
-        value = json.dumps(value)
+        # value = json.dumps(value) << @TODO not needed? (it adds double quotes to the value)
         return self.set(user_id, key, value)
+
+    def get_var(self, user_id: str, key=None) -> Any:
+        """
+        Retrieve any user data for later use.
+
+        :param user_id: User ID
+        :param key: Key to set        
+        """
+        final_key = "userVars"
+        if key:
+            final_key += "." + key
+        return self.get(user_id, final_key)
+
+
+    def get_dot_notation(self, d: dict, dotted_key: str) -> Any:
+        """
+        Allows to retrieve values from a dict using dot notation
+
+        :param d: Dictionary
+        :param keys: Regular key or key with dot notation
+        """
+        if "." in dotted_key:
+            key, rest = dotted_key.split(".", 1)
+            if d.get(key, None) is None:
+                return None
+            return self.get_dot_notation(d[key], rest)
+        else:
+            return d.get(dotted_key, None)

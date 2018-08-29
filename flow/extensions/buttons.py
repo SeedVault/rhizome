@@ -1,5 +1,5 @@
 """Buttons."""
-from flow.engine import Extension
+from flow.chatbot_engine import Extension
 
 class Buttons(Extension):
     """
@@ -18,17 +18,19 @@ class Buttons(Extension):
             'class': class_name, 'method': 'get_response'})
 
 
-    def get_response(self, node):
+    def get_response(self, args):
         """Get response for node."""
+
+        node = args[0]
         output = self.get_buttons(node)
         for out in output:
             self.flow.set_output('buttons', out)
 
 
     def get_buttons(self, node):
-        buttons = []
+        buttons = []        
         for conn in node['connections']:
-            if 'isButton' in conn and conn['is_button']:
+            if conn.get('is_button', None):
                 label = conn['if']['value'][0]
                 if 'name' in conn and len(conn['name']) > 0:
                     label = conn['name']

@@ -3,7 +3,7 @@
 import os
 import json
 from flask import Flask, request, render_template
-from bbot.core import create_bot, Engine
+from bbot.core import create_bot, ChatbotEngine
 from bbot.config import load_configuration
 
 def create_app(test_config=None):
@@ -30,11 +30,11 @@ def create_app(test_config=None):
         #    run_bot = params['runBot']
         bot = create_bot(config_settings)
         input_text = ""
-        for input_type, input_value in input_params.items():
+        #for input_type, input_value in input_params.items():
             # bot.get_response(input_type, input_value)
-            _ = input_type
-            input_text = input_text + input_value
-        req = Engine.create_request(input_text, user_id, bot_id, org_id)
+        #    _ = input_type
+        #    input_text = input_text + input_value
+        req = ChatbotEngine.create_request(input_params, user_id, bot_id, org_id)
         res = bot.get_response(req)
         return json.dumps(res)
 

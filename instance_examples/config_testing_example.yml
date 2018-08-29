@@ -9,10 +9,15 @@
 bbot:
     environment: testing
     config_path: <%= ENV['BBOT_CONFIG_PATH'] %>
-    default_engine: flow
-    engines:
+    default_chatbot_engine: flow
+    chatbot_engines:
+        chatscript:
+            plugin_class: chatscript.chatbot_engine.ChatScript
+            host: <%= ENV['CHATSCRIPT_SERVER_HOST'] %>
+            port: <%= ENV_UNQUOTED['CHATSCRIPT_SERVER_PORT'] %>
+            bot_id: <%= ENV['CHATSCRIPT_SERVER_BOT_ID'] %>
         flow:
-            plugin_class: flow.engine.Flow
+            plugin_class: flow.chatbot_engine.Flow
             dotbot_reader:
                 plugin_class: bbot.json_file_reader.JsonFileReader
                 filename: <%= ENV['BBOT_CONFIG_PATH'] %>/flow_dotbot.json

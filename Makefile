@@ -26,7 +26,7 @@ clean:
 	@find . -name "*.pyo" -print0 | xargs -0 rm -rf
 
 console: clean
-	@python -m channels.console.app
+	@python -m channels.console.app $(MAKECMDGOALS)
 
 coverage: clean
 	@rm -rf htmlcov

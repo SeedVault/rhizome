@@ -1,5 +1,6 @@
 """Variable Eval."""
-from flow.engine import Extension
+import logging
+from flow.chatbot_engine import Extension
 
 class VariableEval(Extension):
     """
@@ -16,12 +17,18 @@ class VariableEval(Extension):
             'class': class_name, 'method': 'match'})
 
 
-    def match(self, pre):
-        """Evaluate conditions."""
-        var_name = pre['var_name']
+    def match(self, args):
+        """Evaluate conditions."""        
+        pre = args[0]
+
+        var_name = pre['varName']
         oper = pre['op']
         value = pre['value']
-        var_value = self.flow.session.get_var(var_name)
+        var_value = self.flow.session.get_var(self.flow.user_id, var_name)
+
+        logger = logging.getLogger('flow')
+        logger.debug(f"Testing condition: {var_name} ({var_value}) is {oper} '{value}'")
+
         ret = None
         if oper == 'eq':
             ret = var_value.strip().lower() == value.strip().lower()
@@ -31,4 +38,7 @@ class VariableEval(Extension):
             ret = var_value > value if var_value.isdigit() else None
         elif oper == 'lt':
             ret = var_value < value if var_value.isdigit() else None
+
+        logger.debug("Result: " + str(ret))
+
         return ret

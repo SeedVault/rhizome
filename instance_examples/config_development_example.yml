@@ -9,16 +9,21 @@
 bbot:
     environment: development
     config_path: <%= ENV['BBOT_CONFIG_PATH'] %>
-    default_engine: flow
-    engines:
-            flow:
-            plugin_class: flow.engine.Flow
+    default_chatbot_engine: flow
+    chatbot_engines:
+        chatscript:
+            plugin_class: chatscript.chatbot_engine.ChatScript
+            host: <%= ENV['CHATSCRIPT_SERVER_HOST'] %>
+            port: <%= ENV_UNQUOTED['CHATSCRIPT_SERVER_PORT'] %>
+            bot_id: <%= ENV['CHATSCRIPT_SERVER_BOT_ID'] %>
+        flow:
+            plugin_class: flow.chatbot_engine.Flow
             dotbot_reader:
                 plugin_class: bbot.json_file_reader.JsonFileReader
                 filename: <%= ENV['BBOT_CONFIG_PATH'] %>/flow_dotbot.json
             nodes_reader:
-                plugin_class: bbot.json_file_reader.JsonFileReader
-                filename: <%= ENV['BBOT_CONFIG_PATH'] %>/flow_script.json
+                plugin_class: bbot.http_request.HttpRequest
+                url: <%= ENV['DOTFLOW_URL'] %>
             session:
                 plugin_class: flow.mongodb.MongoDB
                 uri: <%= ENV['MONGODB_URI'] %>
@@ -27,11 +32,24 @@ bbot:
                 'flow.extensions.media.Media',
                 'flow.extensions.plain_text_eq_match.PlainTextEqMatch',
                 'flow.extensions.regex_match.RegexMatch',
+                'flow.extensions.chatscript_match.ChatscriptMatch',
                 'flow.extensions.send_email.SendEmail',
                 'flow.extensions.text.Text',
-                'flow.extensions.variable_eval.VariableEval'
+                'flow.extensions.variable_eval.VariableEval',
+                'flow.extensions.weather.Weather',
+                'flow.extensions.sentiment_match.SentimentMatch'
             ]
-
+            azure_location: <%= ENV['AZURE_LOCATION'] %>
+            azure_subscription_key: <%= ENV['AZURE_SUBSCRIPION_KEY'] %>
+            weather_api_key: <%= ENV['ACCUWEATHER_API_KEY'] %>                    
+            chatscript_flowext_host: <%= ENV['CHATSCRIPT_SERVER_FLOWEXT_HOST'] %>
+            chatscript_flowext_port: <%= ENV_UNQUOTED['CHATSCRIPT_SERVER_FLOWEXT_PORT'] %>
+            chatscript_flowext_bot_id: <%= ENV['CHATSCRIPT_SERVER_FLOWEXT_BOT_ID'] %>
+            template_engine:
+                plugin_class: bbot.template_engine_jinja2.TemplateEngineJinja2
+            cache:  
+                plugin_class: bbot.cache_classvar.CacheClassvar            
+            
             #    media:
             #        plugin_class: flow.extensions.media.Media
 

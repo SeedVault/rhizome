@@ -241,7 +241,7 @@
         $('.msg_body').scrollTop($('.msg_body')[0].scrollHeight);
         $("#typing").hide();
         botResponse = '';
-        // var botSaid = '<strong>' + botName + ':</strong> ' + data.output.text + "<br>\n";
+        // var botSaid = '<strong>' + botName + ':</strong> ' + data.text + "<br>\n";
         // update(botSaid);
       }
 
@@ -257,8 +257,8 @@
             if (msg != '') {
               $('<div class="msg_b">' + msg + '</div>').insertBefore('.msg_push');
               $('.msg_body').scrollTop($('.msg_body')[0].scrollHeight);
-              $(this).val('');
               $('#frmChat').submit();
+              $(this).val('');
             }
           }
        });
@@ -291,7 +291,7 @@
             var data = JSON.parse(response);
             console.log("RESPONSE:")
             if (data.error) {
-                data.output = {text: 'Error from BBot'};
+                data = {text: 'Error from BBot'};
                 return
             } else {
               $("#typing").show();
@@ -299,7 +299,7 @@
               console.log(data);
               console.log(response);
               console.log("-".repeat(80));
-              botResponse = data.output.text;
+              botResponse = data.text;
               setTimeout("showBotResponse()", 500 + Math.floor((botResponse.length * 10) + 1));
             }
           })

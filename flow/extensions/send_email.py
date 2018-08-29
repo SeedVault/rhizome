@@ -2,7 +2,7 @@
 import smtplib
 from email.message import EmailMessage
 from jinja2 import Template
-from flow.engine import Extension
+from flow.chatbot_engine import Extension
 
 class SendEmail(Extension):
     """SendEmail plugin - defined .flow function sendEmail to send emails."""
@@ -14,22 +14,44 @@ class SendEmail(Extension):
             'class': class_name, 'method': 'sendEmail'})
 
 
-    def match(self, node):
+    def sendEmail(self, args):
         """Send  email."""
+        
+        node = args[0]        
         params = dict()
-        if node['info']['formId']: # if there is a form defined, send the form too
-            form = self.flow.session.get(f"formVars.{node.info.formId}")  # <!-- @TODO Check this
-            # build form
-            for item in form:
-                params[item['question'][0]] = item['answer']  # <!-- @TODO Check this
-        # takes email data from node
-        body_template = Template(node['info']['body'])
-        subject_template = Template(node['info']['subject'])
+            
+        smtp_config = self.flow.dotbot['bot']['smtp']
+        flow_vars = self.flow.session.get_var(self.flow.user_id)
+        
         msg = EmailMessage()
-        msg['Subject'] = subject_template.render(params)
-        msg['From'] = self.flow.dotbot.bot.senderEmailAddress # <!-- @TODO Check this
+        
+        msg['Subject'] = self.flow.template_engine.render(self.flow, node['info']['subject'], flow_vars)
+        msg['From'] = smtp_config['email']
         msg['To'] = node['info']['recipient']
-        msg.set_content(body_template.render(params))
-        smtp = smtplib.SMTP('localhost')
+        
+        body = self.flow.template_engine.render(self.flow, node['info']['body'], flow_vars)
+        body = body.replace('\n', '<br />')
+                
+        if node['info'].get('formId', None): # if there is a form defined, build form and add it to the message body
+            flow_form = self.flow.session.get(self.flow.user_id, f"formVars.{node['info']['formId']}")                            
+            form_template = "{% for form, qa_pair in form_xxxxx.items() %}{{qa_pair.question}}: {{qa_pair.answer}}<br />{% endfor %}"
+            body += "<br /><br />" + Template(form_template).render({'form_xxxxx': flow_form})
+                    
+            msg.set_content("Please see this email with an html compatible email client\n")
+            msg.add_alternative(f"""\
+            <html>
+            <head></head>
+                <body>
+                    {body}
+                </body>
+            </html>
+            """, subtype='html')
+
+        self.flow.logger.debug(f"Sending email through {smtp_config['server']['host']}:{smtp_config['server']['port']} to {node['info']['recipient']}")
+
+        smtp = smtplib.SMTP(smtp_config['server']['host'], smtp_config['server']['port'])
+        smtp.set_debuglevel(1)
+        if smtp_config['server'].get('username', "") and smtp_config['server'].get('password', ""):
+            smtp.login(smtp_config['server']['username'], smtp_config['server']['password']) 
         smtp.send_message(msg)
         smtp.quit()

@@ -18,7 +18,7 @@ class JsonFileReader(ConfigReader):
         super().__init__(config)
 
 
-    def read(self) -> dict:
+    def read(self, bot_id: str) -> dict:
         """Read configuration.
 
         :raises FileNotFoundError if the configuration file is not found.
