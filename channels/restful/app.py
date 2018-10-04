@@ -2,33 +2,36 @@
 
 import os
 import json
+import logging
+import logging.config
 from flask import Flask, request, render_template
-from bbot.core import create_bot, ChatbotEngine
+from bbot.core import create_bot, ChatbotEngine, Plugin
 from bbot.config import load_configuration
 
-def create_app(test_config=None):
-    """Create and configure an instance of the application."""
-    app = Flask(__name__, instance_relative_config=True)
-    config_path = os.path.abspath(os.path.dirname(__file__) \
-    + "../../../instance")
-    if test_config is not None:
-        config_settings = load_configuration(config_path, "BBOT_ENV",
-                                             "testing")
-    else:
-        config_settings = load_configuration(config_path, "BBOT_ENV")
-    app.config.from_mapping(config_settings)
 
+def create_app():
+    """Create and configure an instance of the application."""
+    app = Flask(__name__)
+    config_path = os.path.abspath(os.path.dirname(__file__) + "../../../instance")
+    config = load_configuration(config_path, "BBOT_ENV")
+    app.config.from_mapping(config)
+    w_config = config["channel_restful"]
+    restful = Plugin.load_plugin(w_config)
+    logging.config.dictConfig(config['logging'])
+    logger = logging.getLogger("channel_restful")
 
     @app.route('/Channels/RESTfulWebService', methods=['POST'])
     def rest():                                       # pylint: disable=W0612
         params = request.get_json(force=True)
+        logger.debug("Received request:" + str(params))
         user_id = params['userId']
         bot_id = params['botId']
         org_id = params['orgId']
         input_params = params['input']
         # if 'runBot' in params:
         #    run_bot = params['runBot']
-        bot = create_bot(config_settings)
+        dotbot = restful.dotdb.find_dotbot_by_id(bot_id).dotbot
+        bot = create_bot(config, dotbot)
         input_text = ""
         #for input_type, input_value in input_params.items():
             # bot.get_response(input_type, input_value)

@@ -10,8 +10,7 @@ all:
 	@echo "    make [options]"
 	@echo
 	@echo "Options:"
-	@echo "    clean      Clean temp files"
-	@echo "    console    Run console app (development mode)"
+	@echo "    clean      Clean temp files"	
 	@echo "    coverage   Create code coverage report"
 	@echo "    lint       Analyze source code to flag programming errors, bugs, etc."
 	@echo "    lintdoc    Analyze docstrings in the source code"
@@ -19,6 +18,7 @@ all:
 	@echo "    test       Run unit tests"
 	@echo "    uml        Create uml diagrams"
 	@echo "    web        Run web app (development mode)"
+	@echo "    console    Run console app (development mode)"	
 	@echo
 
 clean:

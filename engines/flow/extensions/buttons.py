@@ -7,7 +7,7 @@ class Buttons(Extension):
 
     This pseudo function will be called on each BBot->setResponse() and will
     provide buttons to the output if isButton attr is true will not be needed
-    with flow2
+    with dotflow2
     """
 
 

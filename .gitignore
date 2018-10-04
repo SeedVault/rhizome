@@ -24,11 +24,15 @@ packages.dot
 # Environments
 venv/
 .env
+.env_testing
 
 # Editors
 .idea/
 .vscode/
 .code-workspace
+.pydevproject
+.project
+/nbproject
 
 # Packages
 *.egg
@@ -44,3 +48,6 @@ develop-eggs
 lib
 lib64
 pip-log.txt
+
+engines/python/bots
+docker/volumes

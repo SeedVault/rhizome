@@ -6,18 +6,20 @@
 # comment character.
 #
 
+environment: development
 bbot:
-    environment: development
     config_path: <%= ENV['BBOT_CONFIG_PATH'] %>
-    default_chatbot_engine: flow
     chatbot_engines:
-        chatscript:
-            plugin_class: chatscript.chatbot_engine.ChatScript
-            host: <%= ENV['CHATSCRIPT_SERVER_HOST'] %>
-            port: <%= ENV_UNQUOTED['CHATSCRIPT_SERVER_PORT'] %>
-            bot_id: <%= ENV['CHATSCRIPT_SERVER_BOT_ID'] %>
+        dotflow2:
+            plugin_class: engines.dotflow2.chatbot_engine.DotFlow2
+            plugins:
+                template:
+                    plugin_class: bbot.plugins.template_jinja2.PluginTemplateEngine
+            dotdb:
+                plugin_class: dot_repository.mongodb.DotRepository
+                uri: <%= ENV['MONGODB_URI'] %>
         flow:
-            plugin_class: flow.chatbot_engine.Flow
+            plugin_class: engines.flow.chatbot_engine.Flow
             dotbot_reader:
                 plugin_class: bbot.json_file_reader.JsonFileReader
                 filename: <%= ENV['BBOT_CONFIG_PATH'] %>/flow_dotbot.json
@@ -37,21 +39,48 @@ bbot:
                 'flow.extensions.text.Text',
                 'flow.extensions.variable_eval.VariableEval',
                 'flow.extensions.weather.Weather',
-                'flow.extensions.sentiment_match.SentimentMatch'
+                'flow.extensions.sentiment_match.SentimentMatch',
             ]
             azure_location: <%= ENV['AZURE_LOCATION'] %>
             azure_subscription_key: <%= ENV['AZURE_SUBSCRIPION_KEY'] %>
-            weather_api_key: <%= ENV['ACCUWEATHER_API_KEY'] %>                    
+            weather_api_key: <%= ENV['ACCUWEATHER_API_KEY'] %>
             chatscript_flowext_host: <%= ENV['CHATSCRIPT_SERVER_FLOWEXT_HOST'] %>
             chatscript_flowext_port: <%= ENV_UNQUOTED['CHATSCRIPT_SERVER_FLOWEXT_PORT'] %>
             chatscript_flowext_bot_id: <%= ENV['CHATSCRIPT_SERVER_FLOWEXT_BOT_ID'] %>
             template_engine:
                 plugin_class: bbot.template_engine_jinja2.TemplateEngineJinja2
-            cache:  
-                plugin_class: bbot.cache_classvar.CacheClassvar            
-            
+            cache:
+                plugin_class: bbot.cache_classvar.CacheClassvar
+
             #    media:
             #        plugin_class: flow.extensions.media.Media
+
+
+# Dot Repository
+dot_repository:
+    plugin_class: dot_repository.mongodb.DotRepository
+    uri: <%= ENV['MONGODB_URI'] %>
+
+# Telegram channel
+channel_telegram:
+    plugin_class: channels.telegram.telegram.Telegram
+    dotdb:
+        plugin_class: dot_repository.mongodb.DotRepository
+        uri: <%= ENV['MONGODB_URI'] %>
+    webhook_uri: <%= ENV['CHANNEL_TELEGRAM_WEBHOOK_URI'] %>
+    cert_filename: <%= ENV['CHANNEL_TELEGRAM_CERT_FILENAME'] %>
+
+channel_console:
+    plugin_class: channels.console.console.Console
+    dotdb:
+        plugin_class: dot_repository.mongodb.DotRepository
+        uri: <%= ENV['MONGODB_URI'] %>
+
+channel_restful:
+    plugin_class: channels.restful.restful.Restful
+    dotdb:
+        plugin_class: dot_repository.mongodb.DotRepository
+        uri: <%= ENV['MONGODB_URI'] %>
 
 # Logging
 # See https://docs.python.org/3.7/library/logging.config.html#configuration-dictionary-schema
@@ -63,10 +92,20 @@ logging:
         handlers: [console]
 
     loggers:
-        flow:
+        bbot:
             level: NOTSET
             handlers: [console]
-            qualname: flow
+            qualname: bbot
+            propagate: false
+        dotflow2:
+            level: NOTSET
+            handlers: [console]
+            qualname: dotflow2
+            propagate: false
+        channel_telegram:
+            level: NOTSET
+            handlers: [console]
+            qualname: channel_telegram
             propagate: false
 
     handlers:

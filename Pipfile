@@ -5,12 +5,18 @@ name = "pypi"
 
 [packages]
 flask = "*"
+flask-restful = "*"
 python-dotenv = "*"
 requests = "*"
 pyyaml = "*"
 certifi = "*"
 pymongo = "*"
 more-itertools = "*"
+py-bcrypt = "*"
+marshmallow = "*"
+gunicorn = "*"
+smokesignal = "*"
+"jinja2" = "*"
 
 [dev-packages]
 pytest = "*"
@@ -21,3 +27,6 @@ mypy = "*"
 
 [requires]
 python_version = "3.7"
+
+[pipenv]
+allow_prereleases = true

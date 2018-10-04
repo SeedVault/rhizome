@@ -19,7 +19,7 @@ class Weather(Extension):
         self.flow.logger.debug(f'Retrieving weather for {location}')  
         st = self.search_text(location)
                 
-        if st == []:
+        if not st:
             self.flow.logger.debug("Location key not found. Invalid location")
             return {
                 'text': '<No weather data or invalid location>',
@@ -55,5 +55,4 @@ class Weather(Extension):
             
         self.flow.logger.error(r.text)
         raise FlowError('Weather location key request status code ' + str(r.status_code))
-        
         

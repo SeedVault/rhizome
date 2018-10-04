@@ -11,17 +11,13 @@ class FlowError(Exception):
 class Flow(ChatbotEngine):
     """BBot engine based on Flow."""
 
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: dict, dotbot: dict) -> None:
         """
         Initialize the plugin.
 
         :param config: Configuration values for the instance.
         """
         super().__init__(config)
-        #
-        self.user_id = ''
-        self.bot_id = ''
-        self.org_id = ''
 
         # 
         self.dotbot_reader = None # ConfigReader        
@@ -145,8 +141,8 @@ class Flow(ChatbotEngine):
         output = ''
         mNode = None
         if not cNode: # no current node, it's initial welcome message
-            self.logger.debug("There is no current node. This is first welcome"
-                              + " mesage. Ignoring input.")
+            self.logger_cs.debug("There is no current node. This is first welcome"
+                                 + " mesage. Ignoring input.")
             # getting first node will provide the global user intents
             cNode = self.get_first_node()
             self.set_current_node_id(cNode['id'])
@@ -180,9 +176,9 @@ class Flow(ChatbotEngine):
                             {'question': cNodeOutput,
                              'answer': self.get_input()}
                         )
-                        self.logger.debug("Variable " + cNode['fieldId'] + " with value '" + self.get_input() + "' on formId " + form_id)
+                        self.logger_cs.debug("Variable " + cNode['fieldId'] + " with value '" + self.get_input() + "' on formId " + form_id)
                     else:
-                        self.logger.debug("Variable " + cNode['fieldId'] + " with value '" + self.get_input() + "'")
+                        self.logger_cs.debug("Variable " + cNode['fieldId'] + " with value '" + self.get_input() + "'")
                     
 
 
@@ -200,9 +196,9 @@ class Flow(ChatbotEngine):
                     # there is no match
                     new_current_node = self.get_first_node()
                     self.set_current_node_id(new_current_node['id'])
-                    self.logger.debug("There is no node defined for the matched connection. Set current node to root")
+                    self.logger_cs.debug("There is no node defined for the matched connection. Set current node to root")
 
-                self.logger.debug("New current node id " + new_current_node['id'])
+                self.logger_cs.debug("New current node id " + new_current_node['id'])
 
             if not mNode: # if there is no match..
                 # botdev should take care of no matches.
@@ -226,30 +222,30 @@ class Flow(ChatbotEngine):
         if not context_node:
             context_node = self.get_current_node()
 
-        self.logger.debug("Find match for user text \"" + self.inp['input']['text'] + "\" on context intent node id {" + context_node['id'] + "}...")
+        self.logger_cs.debug("Find match for user text \"" + self.inp['input']['text'] + "\" on context intent node id {" + context_node['id'] + "}...")
 
         # first try to match current node
         match = self.find_context_pattern_match(context_node)
 
         if match:
             self.last_matched_node_found_in = 'context'            
-            self.logger.debug("Match found on context intent node to node id " + str(self.last_matched_node_id))
+            self.logger_cs.debug("Match found on context intent node to node id " + str(self.last_matched_node_id))
             return match
         else:
             # second try to match toplevel node
             first_node = self.get_first_node()
             if first_node != context_node:
-                self.logger.debug("Match not found, try to match toplevel intent id (" + first_node['id'] + ")")
+                self.logger_cs.debug("Match not found, try to match toplevel intent id (" + first_node['id'] + ")")
 
                 match = self.find_context_pattern_match(first_node)
                 if match:
                     self.last_matched_node_found_in = 'global'
-                    self.logger.debug("Match found on toplevel intent to node id " + self.last_matched_node_id)
+                    self.logger_cs.debug("Match found on toplevel intent to node id " + self.last_matched_node_id)
                     return match
                 else:
-                    self.logger.debug("Match not found on toplevel node")
+                    self.logger_cs.debug("Match not found on toplevel node")
             else:
-               self.logger.debug("Match not found, this is toplevel node, there is nothing more to do")
+               self.logger_cs.debug("Match not found, this is toplevel node, there is nothing more to do")
 
         return False
 
@@ -285,7 +281,7 @@ class Flow(ChatbotEngine):
                             return True
                        
                         if match and isinstance(match, numbers.Number): # if it's numeric then it's a score. we need to collect all scores from node. then match high score
-                            self.logger.debug("Pattern match score " + str(match))
+                            self.logger_cs.debug("Pattern match score " + str(match))
 
                             # if value is already set, then ignore. we want the first node with the value, so first node is matched
                             if not scores.get(match, False):
@@ -303,7 +299,7 @@ class Flow(ChatbotEngine):
             self.last_matched_node_id = high_score_match['last_matched_node_id']
             self.last_matched_connection = high_score_match['last_matched_connection']
             self.last_matched_pattern = high_score_match['last_matched_pattern']
-            self.logger.debug("Best score match: " + str(best_score)  + " - pattern: " + high_score_match['last_matched_pattern'])
+            self.logger_cs.debug("Best score match: " + str(best_score) + " - pattern: " + high_score_match['last_matched_pattern'])
             return True
 
         return False
@@ -345,7 +341,7 @@ class Flow(ChatbotEngine):
             if connection['if']['context'] == 'sentimentAnalysis':
                 opts['op'] = 'sentiment'
 
-            self.logger.debug(f"Test pattern '{pattern}' with op {opts['op']}")
+            self.logger_cs.debug(f"Test pattern '{pattern}' with op {opts['op']}")
             return self.call_dot_flow_function(opts['op'], [pattern, input_text, opts])
 
         # if there is no conditions, return true
@@ -458,7 +454,7 @@ class Flow(ChatbotEngine):
             if return_resolved_node:
                 if node['type'] == 'flowId':
                     if node.get('flowId', None):   # check if it's a flow or node connection
-                        self.logger.debug("It's a connection flow. Finding actual node...")
+                        self.logger_cs.debug("It's a connection flow. Finding actual node...")
                         # look for the real node
                         flow_id = node['flowId']
                         root_node = self.get_node(flow_id)
@@ -466,16 +462,16 @@ class Flow(ChatbotEngine):
                         if m_node_id == 'end':
                             m_node_id = None
                             node = None
-                            self.logger.debug("Flow is empty, discarding")
+                            self.logger_cs.debug("Flow is empty, discarding")
                         else:
-                            self.logger.debug("Found node id " + m_node_id)
+                            self.logger_cs.debug("Found node id " + m_node_id)
                             node = self.get_node(m_node_id)
                     else:
-                        self.logger.debug("It's a connection node. ")
+                        self.logger_cs.debug("It's a connection node. ")
                         m_node_id = node['connections'][0]['default']
                         node = self.get_node(m_node_id)
         else:
-            self.logger.debug('node not found in flow')
+            self.logger_cs.debug('node not found in flow')
             raise FlowError('node not found in flow')
 
         return node

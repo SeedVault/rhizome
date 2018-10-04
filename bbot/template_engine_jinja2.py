@@ -24,4 +24,3 @@ class TemplateEngineJinja2(TemplateEngine):
 
         return template.render(vars) # return rendered text output
 
-        
