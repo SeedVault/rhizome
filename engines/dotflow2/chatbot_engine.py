@@ -1,6 +1,8 @@
 """BBot engine based on DotFlow2."""
 import logging
 import smokesignal
+import datetime
+import bson
 from .dotflow2_core_functions import *
 from .dotflow2_output import *
 from bbot.core import ChatbotEngine
@@ -26,17 +28,18 @@ class DotFlow2(ChatbotEngine):
         self.dotbot = dotbot
 
         #
-        self.dotdb = None
-        self.plugins = []  # bbot plugins
+        self.dotdb = None       # DotBot api repository
+        self.session = None     # User session
+        self.plugins = []       # BBot plugins
 
-        self.dotflow2_functions_map = {}
-        self.template_functions_map = {}
+        self.dotflow2_functions_map = {}    # Registered df2 functions
+        self.template_functions_map = {}    # Registered template custom functions
 
         #
         self.logger_df2 = logging.getLogger("dotflow2")
 
         # All DotFlow2 functions can be called by self.df2.x() - where x is the name of the function
-        # This is used when developing a bot directly in python as a runtime, or when using $python DotFlow2 function
+        # This is used when developing a bot directly in python as a runtime, or when using $code DotFlow2 function
         self.df2 = DotFlow2FunctionsProxy(self)
 
         # Registering DotFlow functions from their modules
@@ -112,16 +115,36 @@ class DotFlow2(ChatbotEngine):
         # Add debug information
         self.response['debug'] = self.debug
 
+        bbot_response = self.response
+
         # returning response
         self.logger_df2.debug("DotFlow2 response: " + str(self.response))
-        return self.response
+
+        bbot_response = self.fallback_bot(self, bbot_response)  # @TODO this might be called from a different place (or maybe we want to have control on this call?)
+
+        return bbot_response
 
     def get_nodes_by_context(self, context: str) -> list:
         """
-        Returns all nodes tagged with specified context
+        Returns all context nodes. Highest node priority for followup nodes, next for custom tagged nodes and lowest priority for global context nodes
         :return: Nodes list
         """
-        return self.dotdb.find_dotflows_by_context(self.bot_id, context)
+        self.logger_df2.debug('Looking for nodes with context "' + context + '"')
+        fu_context_nodes = []
+        try:
+            fu_context_nodes = self.dotdb.find_dotflow_by_id(context)   # @TODO <<<<<<<<< THIS IS LOOKING FOR MONGODB ID, NOT DOTBOT ID!!!!
+        except bson.errors.InvalidId as e:
+            pass
+
+        custom_contexts_nodes = []
+        try:
+            custom_contexts_nodes = self.dotdb.find_dotflows_by_context(self.bot_id, context) # @TODO WARNING possible collision of nodeId and context
+        except bson.errors.InvalidId as e:
+            pass
+
+        contexts_nodes = fu_context_nodes + custom_contexts_nodes
+        self.logger_df2.debug('Got contexts: ' + str(contexts_nodes))
+        return contexts_nodes
 
     def get_current_contexts(self) -> list:
         """
@@ -132,7 +155,37 @@ class DotFlow2(ChatbotEngine):
 
         :return:
         """
-        return ['global']
+        contexts = []
+        # loads followup context (highest priority)
+        fuc = self.session.get(self.user_id, 'context_current_followup')
+        if fuc:
+            contexts.append(fuc)
+
+        # @TODO loads custom contexts (low priority. expires in 5 minutes)
+
+        contexts.append('global')  # global context is always active with lowest priority
+        return contexts
+
+    def add_custom_context(self, context) -> list:
+        """
+        Adds a custom context to the bot session context
+
+        :return:
+        """
+        c = {
+            'name': context,
+            'created_at': datetime.datetime.utcnow()
+        }
+        self.push(self.user_id, 'contexts_current_custom')
+
+    def set_followup_context(self, context: str):
+        """
+        Sets internal follow-up context. The context should be the node id
+
+        :param context:
+        :return:
+        """
+        self.session.set(self.user_id, 'context_current_followup', context)
 
     def get_matching_paths(self, contexts: list) -> dict:
         """
@@ -225,7 +278,7 @@ class DotFlow2(ChatbotEngine):
 
     def is_dotflow2_function(self, value) -> bool:
         """
-        Returns true if the value is a DotFlow2 function
+        Returns true if the value has DotFlow2 function caracteristics (it won't check for registered functions)
         :param value:
         :return:
         """
@@ -271,11 +324,13 @@ class DotFlow2(ChatbotEngine):
         """
         Executes a DotFlow2 function
 
-        :param func_name:
-        :param args:
+        :param func_name: Name of the function
+        :param args: List with arguments
+        :param f_type: Function Type
         :return:
         """
         self.logger_df2.debug('Calling dotflow2 function "' + func_name + '" with args ' + str(args))
+        start = datetime.datetime.now()
         if func_name in self.dotflow2_functions_map:
             response = getattr(self.dotflow2_functions_map[func_name]['object'],
                                self.dotflow2_functions_map[func_name]['method'])(args, f_type)
@@ -284,23 +339,25 @@ class DotFlow2(ChatbotEngine):
             self.logger_df2.warning(
                 'The bot tried to run DotFlow2 function "' + func_name + '" but it\'s not registered')
             response = None
-
+        end = datetime.datetime.now()
         self.logger_df2.debug('Response: ' + str(response))
 
+        # Adds debug information about the executed function
         self.debug['functionsResponses'].append({
             'function': func_name,
             'args': args,
             'return': response,
-            'responseTime': 0
+            'responseTime': int((end - start).total_seconds() * 1000)
         })
-
         return response
-
 
 
 class DotFlow2FunctionsProxy:
     """
-    This class is a proxy to call DotFlow2 functions
+    This class is a proxy to call DotFlow2 functions in a easy way
+    Ex:
+    bbot = DotFlow2FunctionsProxy()
+    bbot.fname()
     """
     def __init__(self, bot: ChatbotEngine):
         self.bot = bot

@@ -363,10 +363,9 @@ class DotRepository():
         context_nodes = []
         for df in dotflows:
             for n in df.dotflow['nodes']:
-                if context in n['context']:
+                if context in n.get('context', []):
                     context_nodes.append(n)
 
-        print(context_nodes)
         return context_nodes
 
     def create_dotflow(self, dotflow: dict, dotbot: DotBot) -> DotFlow:

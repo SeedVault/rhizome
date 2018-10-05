@@ -138,7 +138,8 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
             self.logger.debug('Bot engine has a no match. Looking fallback bots')
 
             # try import bots
-            for bot_name in bot.dotbot.get('fallbackBots'):
+            fbbs = bot.dotbot.get('fallbackBots', [])
+            for bot_name in fbbs:
                 self.logger.debug(f'Trying with bot {bot_name}')
                 bot_dotbot_container = bot.dotdb.find_dotbot_by_name(bot_name)
                 if not bot_dotbot_container:
@@ -156,8 +157,10 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
                 if not fallback_response.get('noMatch'):
                     self.logger.debug('Fallback bot has a response. Returning this to channel.')
                     return fallback_response
-
-            self.logger.debug('Fallback bot don\'t have a response either. Sending original main bot response if any')
+            if fbbs:
+                self.logger.debug('Fallback bot don\'t have a response either. Sending original main bot response if any')
+            else:
+                self.logger.debug('No fallback defined for this bot. Sending original main bot response if any')
         return response
 
 class ChatbotEngineNotFoundError(Exception):

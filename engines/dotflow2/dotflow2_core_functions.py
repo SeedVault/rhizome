@@ -9,7 +9,7 @@ class DotFlow2CoreFunctions():
         """
 
         self.bot = bot
-        self.functions = ['input', 'eq', 'code']
+        self.functions = ['input', 'eq', 'code', 'goto']
 
         for f in self.functions:
             bot.register_dotflow2_function(f, {'object': self, 'method': f})
@@ -20,14 +20,27 @@ class DotFlow2CoreFunctions():
     ####################################################################################################################
 
 
+    def goto(self, args, f_type):
+        # @TODO if target node of the goto does not need to wait for user input, it should execute it directly. If botdev doesn't want this, they should use $gotoAndWait
+        """
+        Sets internal follow-up context.
+
+        :param args: 0: Node ID where to go next
+        :param f_type:
+        :return:
+        """
+        # @TODO check existence of target node
+        node_id = args[0]
+        self.bot.set_followup_context(node_id)
+
     def code(self, args, f_type):
         """
         !!!!WARNING!!!! THIS FUNCTION RUNS UNRESTRICTED PYTHON CODE. DON'T EXPOSE IT TO PUBLIC ACCESS!!
 
-        This functions is used to run any python code on conditions and responses objects.
+        This function is used to run any python code on conditions and responses objects.
         Of course you can use DotFlow2 functions inside it
         :param args:    0: string with python code
-                        1: boolean. True to get expression result (only expressions works). False to run any kind of python code
+                        1: string. 'C' to get expression result (only expressions works). 'R' to run any kind of python code (no result is returned)
         :return:
         """
         code = args[0]

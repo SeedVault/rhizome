@@ -17,6 +17,7 @@ marshmallow = "*"
 gunicorn = "*"
 smokesignal = "*"
 "jinja2" = "*"
+inotify = "*"
 
 [dev-packages]
 pytest = "*"
