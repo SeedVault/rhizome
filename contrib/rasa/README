@@ -1,0 +1,14 @@
+# install rasa
+$ pip3 install rasa_nlu
+
+# run make to convert top file, create models and some test data
+$ make
+
+# Test classifying text
+$ echo 'goodbye' | ./rasaparse.py demo-rasa
+
+# Test model with its own training data
+$ ./rasatest.py demo-rasa < test-demo-exact.tsv
+
+# Test model with jumbled text
+$ ./rasatest.py demo-rasa < test-demo-jumbled.tsv
