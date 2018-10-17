@@ -22,24 +22,31 @@ def create_app():
 
     @app.route('/Channels/RESTfulWebService', methods=['POST'])
     def rest():                                       # pylint: disable=W0612
-        params = request.get_json(force=True)
-        logger.debug("Received request:" + str(params))
-        user_id = params['userId']
-        bot_id = params['botId']
-        org_id = params['orgId']
-        input_params = params['input']
-        # if 'runBot' in params:
-        #    run_bot = params['runBot']
-        dotbot = restful.dotdb.find_dotbot_by_id(bot_id).dotbot
-        bot = create_bot(config, dotbot)
-        input_text = ""
-        #for input_type, input_value in input_params.items():
-            # bot.get_response(input_type, input_value)
-        #    _ = input_type
-        #    input_text = input_text + input_value
-        req = ChatbotEngine.create_request(input_params, user_id, bot_id, org_id)
-        res = bot.get_response(req)
-        return json.dumps(res)
+        try:
+            params = request.get_json(force=True)
+            logger.debug("Received request:" + str(params))
+            user_id = params['userId']
+            bot_id = params['botId']
+            org_id = params['orgId']
+            input_params = params['input']
+            # if 'runBot' in params:
+            #    run_bot = params['runBot']
+            dotbotContainer = restful.dotdb.find_dotbot_by_container_id(bot_id)
+            if not dotbotContainer:
+                raise Exception('Bot not found')
+            bot = create_bot(config, dotbotContainer.dotbot)
+            input_text = ""
+            #for input_type, input_value in input_params.items():
+                # bot.get_response(input_type, input_value)
+            #    _ = input_type
+            #    input_text = input_text + input_value
+            req = ChatbotEngine.create_request(input_params, user_id, bot_id, org_id)
+            response = bot.get_response(req)
+        except Exception as e:
+            response = {'error': {'message': str(e)}}
+
+        logger.debug("Response: " + str(response))
+        return json.dumps(response)
 
 
     @app.route('/TestWebChatBot')

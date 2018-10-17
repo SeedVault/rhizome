@@ -2,7 +2,7 @@ import logging
 
 class Restful:
     """"""
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: dict, dotbot: dict=None) -> None:
         """
 
         """

@@ -290,8 +290,11 @@
           .done(function(response) {
             var data = JSON.parse(response);
             console.log("RESPONSE:")
+
             if (data.error) {
-                data = {text: 'Error from BBot'};
+                console.log(data.error)
+                botResponse = 'Error from BBot'
+                showBotResponse()
                 return
             } else {
               $("#typing").show();
@@ -299,8 +302,10 @@
               console.log(data);
               console.log(response);
               console.log("-".repeat(80));
-              botResponse = data.text;
-              setTimeout("showBotResponse()", 500 + Math.floor((botResponse.length * 10) + 1));
+              if (data.output.length) {
+                botResponse = data.output[0].text.join("\n")
+                setTimeout("showBotResponse()", 500 + Math.floor((botResponse.length * 10) + 1));
+              }
             }
           })
           .fail(function(xhr, status, error) {
