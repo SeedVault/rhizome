@@ -138,7 +138,8 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
             self.logger.debug('Bot engine has a no match. Looking fallback bots')
 
             # try import bots
-            for bot_name in bot.dotbot.get('fallbackBots'):
+            fbbs = bot.dotbot.get('fallbackBots', [])
+            for bot_name in fbbs:
                 self.logger.debug(f'Trying with bot {bot_name}')
                 bot_dotbot_container = bot.dotdb.find_dotbot_by_name(bot_name)
                 if not bot_dotbot_container:
@@ -156,15 +157,31 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
                 if not fallback_response.get('noMatch'):
                     self.logger.debug('Fallback bot has a response. Returning this to channel.')
                     return fallback_response
-
-            self.logger.debug('Fallback bot don\'t have a response either. Sending original main bot response if any')
+            if fbbs:
+                self.logger.debug('Fallback bot don\'t have a response either. Sending original main bot response if any')
+            else:
+                self.logger.debug('No fallback defined for this bot. Sending original main bot response if any')
         return response
+
 
 class ChatbotEngineNotFoundError(Exception):
     """ChatbotEngine not found."""
 
+
 class ChatbotEngineError(Exception):
     """ChatbotEngine error."""
+
+
+class BBotException(Exception):
+    """BBot plugin error."""
+
+    def __init__(self, args):
+        self.args = args
+        super(BBotException, self).__init__('args: {}'.format(args))
+
+    def __reduce__(self):
+        return BBotException, self.args
+
 
 class ChatbotEngineExtension():
     """Base class for extensions."""
@@ -245,7 +262,6 @@ class Cache(Plugin, metaclass=abc.ABCMeta):
         return ""
 
 
-
 def create_bot(config: dict, dotbot: dict={}) -> ChatbotEngine:
     """
     Create a bot.
@@ -256,8 +272,8 @@ def create_bot(config: dict, dotbot: dict={}) -> ChatbotEngine:
                         "bbot.default_chatbot_engine" in configuration file.
     :return: Instance of a subclass of ChatbotEngine.
     """
-    chatbot_engine = dotbot['chatbot_engine']
-    if not chatbot_engine in config["bbot"]["chatbot_engines"]:
+    chatbot_engine = dotbot['chatbotEngine']
+    if chatbot_engine not in config["bbot"]["chatbot_engines"]:
         raise ChatbotEngineNotFoundError()
 
     bot = Plugin.load_plugin(config["bbot"]["chatbot_engines"][chatbot_engine], dotbot)
@@ -266,3 +282,4 @@ def create_bot(config: dict, dotbot: dict={}) -> ChatbotEngine:
     if hasattr(bot, 'init_plugins'):
         bot.init_plugins()
     return bot
+

@@ -33,7 +33,7 @@ def create_app():
             # if not, it delete the webhook and throw an exception
             enabled = webhook_check(bot_id)
             if enabled:
-                dotbot = telegram.dotdb.find_dotbot_by_id(bot_id).dotbot
+                dotbot = telegram.dotdb.find_dotbot_by_container_id(bot_id).dotbot
                 token = dotbot['channels']['telegram']['token']
                 telegram.set_api_token(token)
 
@@ -57,7 +57,7 @@ def create_app():
 
     def webhook_check(bot_id):
 
-        dotbot = telegram.dotdb.find_dotbot_by_id(bot_id).dotbot
+        dotbot = telegram.dotdb.find_dotbot_by_container_id(bot_id).dotbot
 
         if dotbot['channels']['telegram']['enabled']:
             return True

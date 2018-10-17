@@ -31,14 +31,14 @@ print("Type \"quit\" or \"bye\" to leave chat\n\n")
 user_id, bot_id, org_id, debug = sys.argv[2:]
 
 
-dotbotContainer = console.dotdb.find_dotbot_by_id(bot_id)
+dotbotContainer = console.dotdb.find_dotbot_by_idname(bot_id)
 if not dotbotContainer:
     raise Exception('Couldn\'t find the bot')
 
 bot = create_bot(config, dotbotContainer.dotbot)
 while True:
     input_text = input("You: ")
-    if input_text.lower() in ["quit", "bye"]:
+    if input_text.lower() in ["!quit", "!bye"]:
         print("BBot: Bye!\n")
         sys.exit(0)
     request = ChatbotEngine.create_request({'text': input_text}, user_id, bot_id, org_id)
@@ -48,8 +48,12 @@ while True:
         print(f"Debug: {response}")
 
     for r in response['output']:
-        for text in r.get('text'):
+        for text in r.get('text', []):
             print(f"BBot: {text}")
+
+
+
+            
 
 
 

@@ -25,21 +25,19 @@ class AuthSchema(Schema):
     token = fields.Str()
 
 
-class DotBotSchema(Schema):
+class DotBotContainerSchema(Schema):
     """DotBot schema."""
 
-    id = fields.Str()
     dotbot = fields.Dict()
     organizationId = fields.Str()
     createdAt = fields.DateTime(dump_only=True)
     updatedAt = fields.DateTime()
 
 
-class DotFlowSchema(Schema):
+class DotFlowContainerSchema(Schema):
     """DotFlow schema."""
 
-    id = fields.Str()
-    dotbotId = fields.Str()
     dotflow = fields.Dict()
+    dotbotId = fields.Str()
     createdAt = fields.DateTime(dump_only=True)
     updatedAt = fields.DateTime()

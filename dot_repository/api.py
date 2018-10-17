@@ -7,7 +7,7 @@ from marshmallow import ValidationError
 from bbot.config import load_configuration
 from bbot.core import Plugin
 from .models import AuthenticationError
-from .schemas import CredentialsSchema, AuthSchema, DotBotSchema, DotFlowSchema
+from .schemas import CredentialsSchema, AuthSchema, DotBotContainerSchema, DotFlowContainerSchema
 
 app = Flask(__name__)
 config_path = os.path.abspath(os.path.dirname(__file__) + "/../instance")
@@ -73,22 +73,22 @@ class DotBot(Resource):
     """A DotBot."""
 
     @authentication_required
-    def get(self, dotbot_id: str = '') -> dict:
+    def get(self, dotbot_idname: str = '') -> dict:
         """Get a DotBot by its ID."""
-        if not dotbot_id:
+        if not dotbot_idname:
             return self.get_list()
 
-        dotbot = dotdb.find_dotbot_by_id(dotbot_id)
+        dotbot = dotdb.find_dotbot_by_idname(dotbot_idname)
         if not dotbot:
             return json_response({})
-        schema = DotBotSchema()
+        schema = DotBotContainerSchema()
         return schema.dump(dotbot)
 
     @authentication_required
     def get_list(self) -> list:
         """Get all dotbots."""
         dotbots = dotdb.find_dotbots({'deleted': '0'})
-        schema = DotBotSchema(many=True)
+        schema = DotBotContainerSchema(many=True)
         return schema.dump(dotbots)
 
     @authentication_required
@@ -96,30 +96,30 @@ class DotBot(Resource):
         """Add a DotBot."""
         # check if id is already in use in the organization
         json_data = request.get_json()
-        old_dotbot = dotdb.find_dotbot_by_name(json_data['dotbot']['name'])
+        old_dotbot = dotdb.find_dotbot_by_idname(json_data['name'])
         if old_dotbot:
             return json_response({'error': 'Name already in use'}, 400)
 
         dotbot = dotdb.create_dotbot(json_data, g.user.organization)
-        schema = DotBotSchema()
+        schema = DotBotContainerSchema()
         return schema.dump(dotbot)
 
     @authentication_required
-    def put(self, dotbot_id: str) -> dict:
+    def put(self, dotbot_idname: str) -> dict:
         """Update a DotBot."""
         json_data = request.get_json()
-        old_dotbot = dotdb.find_dotbot_by_name(json_data['dotbot']['name'])
+        old_dotbot = dotdb.find_dotbot_by_idname(json_data['name'])
         if old_dotbot:
             return json_response({'error': 'Name already in use'}, 400)
 
-        dotbot = dotdb.update_dotbot(dotbot_id, json_data)
-        schema = DotBotSchema()
+        dotbot = dotdb.update_dotbot_by_idname(dotbot_idname, json_data)
+        schema = DotBotContainerSchema()
         return schema.dump(dotbot)
 
     @authentication_required
-    def delete(self, dotbot_id: str) -> dict:
+    def delete(self, dotbot_idname: str) -> dict:
         """Delete a DotBot."""
-        dotdb.delete_dotbot(dotbot_id)
+        dotdb.delete_dotbot_by_idname(dotbot_idname)
         return json_response({})
 
 
@@ -143,61 +143,63 @@ class DotFlow(Resource):
     """A dotflow."""
 
     @authentication_required
-    def get(self, dotflow_id: str = '', dotbot_id: str = '') -> dict:
+    def get(self, dotflow_idname: str = '', dotbot_idname: str = '') -> dict:
         """Get a dotflow by its ID."""
-        if not dotflow_id and dotbot_id:
-            return self.get_list(dotbot_id)
+        if not dotflow_idname and dotbot_idname:
+            return self.get_list(dotbot_idname)
 
-        dotflow = dotdb.find_dotflow_by_id(dotflow_id)
-        if not dotflow:
+        dotflow_container = dotdb.find_dotflow_by_idname(dotflow_idname)
+        if not dotflow_container:
             return json_response({})
-        schema = DotFlowSchema()
-        return schema.dump(dotflow)
+        schema = DotFlowContainerSchema()
+        return schema.dump(dotflow_container)
 
     @authentication_required
-    def get_list(self, dotbot_id: str) -> list:
+    def get_list(self, dotbot_idname: str) -> list:
         """Get all dotflows in a dotbot."""
-        dotbot = dotdb.find_dotbot_by_id(dotbot_id)
-        if not dotbot:
+        dotbot_container = dotdb.find_dotbot_by_idname(dotbot_idname)
+        if not dotbot_container:
             return json_response({'error': 'DotBot not found'}, 404)
 
-        dotflows = dotdb.find_dotflows_by_dotbot_id(dotbot.id, fields=get_fields_from_url())
-        schema = DotFlowSchema(many=True)
+        dotflows = dotdb.find_dotflows_by_dotbot_idname(dotbot_idname, fields=get_fields_from_url())
+        schema = DotFlowContainerSchema(many=True)
         return schema.dump(dotflows)
 
     @authentication_required
-    def post(self, dotbot_id: str) -> dict:
+    def post(self, dotbot_idname: str) -> dict:
         """Add a dotflow."""
         json_data = request.get_json()
-        dotbot = dotdb.find_dotbot_by_id(dotbot_id)
-        if not dotbot:
+        dotbot_container = dotdb.find_dotbot_by_idname(dotbot_idname)
+        if not dotbot_container:
             return json_response({'error': 'DotBot not found'}, 404)
-        dotflow = dotdb.create_dotflow(json_data, dotbot)
-        schema = DotFlowSchema()
+
+        dotflow = dotdb.create_dotflow(json_data, dotbot_container.dotbot)
+        schema = DotFlowContainerSchema()
         return schema.dump(dotflow)
 
-    def put(self, dotflow_id: str, dotbot_id: str = '') -> dict:
+    def put(self, dotflow_idname: str, dotbot_idname: str = '') -> dict:
         """Update a dotflow."""
         json_data = request.get_json()
-        dotflow = dotdb.update_dotflow(dotflow_id, json_data)
-        schema = DotFlowSchema()
+        dotflow = dotdb.update_dotflow_by_idname(dotflow_idname, json_data)
+        schema = DotFlowContainerSchema()
         return schema.dump(dotflow)
 
     @authentication_required
-    def delete(self, dotflow_id: str) -> dict:
+    def delete(self, dotflow_idname: str) -> dict:
         """Delete a DotFlow."""
-        dotdb.delete_dotflow(dotflow_id)
+        dotdb.delete_dotflow_by_idname(dotflow_idname)
         return json_response({})
 
 
 # Register all resources
 api.add_resource(Auth, '/system/login/')
+# @TODO bot name and flow name are not unique. we need to replace this with endpoints with ref with composite key organization/botname
 api.add_resource(DotBot,
                  '/dotbots/',
-                 '/dotbots/<string:dotbot_id>')
+                 '/dotbots/<string:dotbot_idname>')
 api.add_resource(DotBotFormIdsList, '/dotbots/<string:dotbot_id>/formIds/')
 api.add_resource(DotBotFieldIdsList, '/dotbots/<string:dotbot_id>/fieldIds/')
 api.add_resource(DotFlow,
-                 '/dotbots/<string:dotbot_id>/dotflows/',
-                 '/dotbots/<string:dotbot_id>/dotflows/<string:dotflow_id>',
-                 '/dotflows/<string:dotflow_id>')
+                 '/dotbots/<string:dotbot_idname>/dotflows/',
+                 '/dotbots/<string:dotbot_idname>/dotflows/<string:dotflow_idname>',
+                 '/dotflows/<string:dotflow_idname>')

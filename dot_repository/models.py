@@ -37,12 +37,11 @@ class AuthenticationError(Exception):
     """Authentication error."""
 
 
-class DotBot():
-    """Represent a DotBot."""
+class DotBotContainer():
+    """Represent a DotBot container object."""
 
     def __init__(self) -> None:
         """Initialize values."""
-        self.id = ''
         self.dotbot = {}  # Actual dotbot data
         self.organization = Organization()  # Organization
         self.deleted = 0          # 1: Deleted, 0: Not deleted
@@ -50,13 +49,12 @@ class DotBot():
         self.updatedAt = datetime.datetime.utcnow()
 
 
-class DotFlow():
-    """Represent a DotFlow."""
+class DotFlowContainer():
+    """Represent a DotFlow container object."""
 
     def __init__(self) -> None:
         """Initialize values."""
-        self.id = ''
         self.dotflow = {}  # Actual DotFlow data
-        self.dotbot = DotBot()  # DotBot
+        self.dotbot = DotBotContainer()  # DotBot
         self.createdAt = datetime.datetime.utcnow()
         self.updatedAt = datetime.datetime.utcnow()

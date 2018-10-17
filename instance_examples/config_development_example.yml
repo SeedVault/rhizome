@@ -18,6 +18,9 @@ bbot:
             dotdb:
                 plugin_class: dot_repository.mongodb.DotRepository
                 uri: <%= ENV['MONGODB_URI'] %>
+            session:
+                plugin_class: engines.dotflow2.session_mongodb.SessionMongoDB
+                uri: <%= ENV['MONGODB_URI'] %>
         flow:
             plugin_class: engines.flow.chatbot_engine.Flow
             dotbot_reader:

@@ -4,7 +4,7 @@ import datetime
 from pymongo import MongoClient, ASCENDING
 from bson.objectid import ObjectId
 import bcrypt
-from .models import User, Organization, DotBot, Token, DotFlow, AuthenticationError
+from .models import User, Organization, DotBotContainer, Token, DotFlowContainer, AuthenticationError
 
 
 class DotRepository():
@@ -12,7 +12,7 @@ class DotRepository():
 
     def __init__(self, config: dict, dotbot: dict=None) -> None:
         """Initialize the connection."""
-        if not 'uri' in config:
+        if 'uri' not in config:
             raise RuntimeError("FATAL ERR: Missing config var uri")
         uri = config['uri']
         client = MongoClient(uri)
@@ -36,11 +36,11 @@ class DotRepository():
         self.mongo.users.create_index('username', unique=True)
         self.mongo.users.create_index('token', unique=True)
         # Unique dotbot name
-        self.mongo.dotbot.create_index('name', unique=True)
+        #self.mongo.dotbot.create_index('dotbot.name', unique=True)
         # Unique dotflow name by dotbot
-        self.mongo.dotflow.create_index([('name', ASCENDING),
-                                         ('dotbot_id', ASCENDING)],
-                                        unique=True)
+        #self.mongo.dotflow.create_index([('name', ASCENDING),
+        #                                 ('dotbot_id', ASCENDING)],
+        #                               unique=True)
 
     @staticmethod
     def get_projection_from_fields(fields: list=[]):
@@ -166,6 +166,21 @@ class DotRepository():
         """
         return self.find_one_user({"token": token})
 
+    def marshall_dotbot(self, result) -> DotBotContainer:
+        """
+        Marshall a dotbot.
+
+        :param result: A mongodb document representing a dotbot.
+        :return: DotBot instance
+        """
+        dotbot_container = DotBotContainer()
+        dotbot_container.dotbot = result['dotbot']
+        dotbot_container.organization = self.find_one_organization({'_id': ObjectId(str(result['organizationId']))})
+        dotbot_container.deleted = result['deleted']
+        dotbot_container.createdAt = result['createdAt']
+        dotbot_container.updatedAt = result['updatedAt']
+        return dotbot_container
+
     def find_dotbots(self, filters: dict) -> list:
         """
         Retrieve a list of dotbots.
@@ -179,51 +194,35 @@ class DotRepository():
             dotbots.append(self.marshall_dotbot(result))
         return dotbots
 
-    def marshall_dotbot(self, result) -> DotBot:
-        """
-        Marshall a dotbot.
-
-        :param result: A mongodb document representing a dotbot.
-        :return: DotBot instance
-        """
-        dotbot = DotBot()
-        dotbot.id = str(result['_id'])
-        dotbot.organization = self.find_one_organization({'_id': ObjectId(str(result['organizationId']))})
-        dotbot.deleted = result['deleted']
-        dotbot.createdAt = result['createdAt']
-        dotbot.updatedAt = result['updatedAt']
-        dotbot.dotbot = result['dotbot']
-        return dotbot
-
-    def find_one_dotbot(self, filters: dict) -> DotBot:
+    def find_one_dotbot(self, filters: dict) -> DotBotContainer:
         """
         Retrieve a dotbot by filters.
 
         :param filters: Dictionary with matching conditions.
-        :return: DotBot instance or None if not found.
+        :return: DotBotContainer instance or None if not found.
         """
         result = self.mongo.dotbot.find_one(filters)
         if not result:
             return None
         return self.marshall_dotbot(result)
 
-    def find_dotbot_by_id(self, dotbot_id: str) -> DotBot:
+    def find_dotbot_by_container_id(self, container_id: str) -> DotBotContainer:
         """
-        Retrieve a dotbot by its ID.
+        Retrieve a dotbot by its container ID.
 
-        :param dotbot_id: DotBot ID
+        :param container_id: DotBot container ID
+        :return: DotBotContainer instance or None if not found.
+        """
+        return self.find_one_dotbot({"_id": ObjectId(str(container_id))})
+
+    def find_dotbot_by_idname(self, dotbot_idname: str) -> DotBotContainer:
+        """
+        Retrieve a dotbot by its id or name.
+
+        :param dotbot_idname: DotBot id or name
         :return: DotBot instance or None if not found.
         """
-        return self.find_one_dotbot({"_id": ObjectId(str(dotbot_id))})
-
-    def find_dotbot_by_name(self, name: str) -> DotBot:
-        """
-        Retrieve a dotbot by its name.
-
-        :param name: DotBot name
-        :return: DotBot instance or None if not found.
-        """
-        return self.find_one_dotbot({'dotbot.name': name})
+        return self.find_one_dotbot({'$or': [{'dotbot.id': dotbot_idname}, {'dotbot.name': dotbot_idname}]})
 
     def find_dotbots_by_channel(self, channel: str) -> list:
         """
@@ -235,8 +234,7 @@ class DotRepository():
 
         return self.find_dotbots({'dotbot.channels.' + channel + '.enabled': True})
 
-
-    def create_dotbot(self, dotbot: dict, organization: Organization) -> DotBot:
+    def create_dotbot(self, dotbot: dict, organization: Organization) -> DotBotContainer:
         """
         Create a new DotBot.
 
@@ -244,42 +242,86 @@ class DotRepository():
         :param organization: A valid organization.
         :return: DotBot created.
         """
+        oid = ObjectId()
+        if not dotbot.get('id'):  # Insert oid on dotbot id if not set
+            dotbot['id'] = str(oid)
+
         param = {
-            'dotbot': dotbot['dotbot'],
+            '_id': oid,
+            'dotbot': dotbot,
             'organizationId': organization.id,
             'deleted': '0',
             'createdAt': datetime.datetime.utcnow(),
             'updatedAt': datetime.datetime.utcnow()
         }
-        dotbot_id = self.mongo.dotbot.insert_one(param).inserted_id
-        return self.find_one_dotbot({"_id": ObjectId(str(dotbot_id))})
+        self.mongo.dotbot.insert_one(param)
+        return self.find_dotbot_by_container_id(oid)
 
-    def update_dotbot(self, dotbot_id: str, dotbot: dict) -> DotBot:
+    def update_dotbot_by_container_id(self, container_id: str, dotbot: dict) -> DotBotContainer:
         """
-        Update a DotBot.
+        Update a DotBot by its container id.
 
-        :param dotbot: DotBot
-        :return: DotBot updated.
+        :param container_id: DotBot container id
+        :param dotbot: DotBotContainer object
+        :return: Updated DotBot
         """
-        self.mongo.dotbot.update_one({"_id": ObjectId(str(dotbot_id))},
+        self.mongo.dotbot.update_one({"_id": ObjectId(str(container_id))},
                                      {"$set": {
-                                         "dotbot": dotbot['dotbot'],
+                                         "dotbot": dotbot,
                                          "updatedAt": datetime.datetime.utcnow()
                                      }})
-        return self.find_one_dotbot({"_id": ObjectId(str(dotbot_id))})
+        return self.find_dotbot_by_container_id(container_id)
 
-    def delete_dotbot(self, dotbot_id: str) -> None:
+    def update_dotbot_by_idname(self, dotbot_idname: str, dotbot: dict) -> DotBotContainer:
+        """
+        Update a DotBot by its id.
+
+        :param dotbot_id: DotBot id
+        :param dotbot: DotBot object
+        :return: Updated DotBotContainer object
+        """
+        self.mongo.dotbot.update_one({'$or': [{'dotbot.id': dotbot_idname}, {'dotbot.name': dotbot_idname}]},
+                                     {"$set": {
+                                         "dotbot": dotbot,
+                                         "updatedAt": datetime.datetime.utcnow()
+                                     }})
+        return self.find_dotbot_by_idname(dotbot_idname)
+
+    def delete_dotbot_by_container_id(self, container_id: str) -> None:
         """
         Soft-delete a DotBot.
 
-        :param dotbot_id: DotBot ID
+        :param container_id: DotBot container ID
         """
-        self.mongo.dotbot.update_one({"_id": ObjectId(str(dotbot_id))},
+        self.mongo.dotbot.update_one({"_id": ObjectId(str(container_id))},
+                                     {"$set": {"deleted": 1, "updatedAt": datetime.datetime.utcnow()}})
+
+    def delete_dotbot_by_idname(self, dotbot_idname: str) -> None:
+        """
+        Soft-delete a DotBot.
+
+        :param dotbot_idname: DotBot ID
+        """
+        self.mongo.dotbot.update_one({'$or': [{'dotbot.id': dotbot_idname}, {'dotbot.name': dotbot_idname}]},
                                      {"$set": {"deleted": 1, "updatedAt": datetime.datetime.utcnow()}})
 
 
 
     ### DOTFLOWS
+
+    def marshall_dotflow(self, result) -> DotFlowContainer:
+        """
+        Marshall a DotFlowContainer.
+
+        :param result: A mongodb document representing a DotFlow.
+        :return: DotFlow instance
+        """
+        dotflow_container = DotFlowContainer()
+        if result.get('dotflow'): dotflow_container.dotflow = result['dotflow']
+        if result.get('dotbotId'): dotflow_container.dotbot = self.find_dotbot_by_idname(result['dotbotId'])
+        if result.get('createdAt'): dotflow_container.createdAt = result['createdAt']
+        if result.get('updatedAt'): dotflow_container.updatedAt = result['updatedAt']
+        return dotflow_container
 
     def find_dotflows(self, filters: dict, projection: dict=None) -> list:
         """
@@ -296,22 +338,7 @@ class DotRepository():
             dotflows.append(self.marshall_dotflow(result))
         return dotflows
 
-    def marshall_dotflow(self, result) -> DotFlow:
-        """
-        Marshall a DotFlow.
-
-        :param result: A mongodb document representing a DotFlow.
-        :return: DotFlow instance
-        """
-        dotflow = DotFlow()
-        dotflow.id = str(result.get('_id'))
-        dotflow.dotflow = result.get('dotflow')
-        dotflow.createdAt = result.get('createdAt')
-        dotflow.updatedAt = result.get('updatedAt')
-        if result.get('dotbotId'): dotflow.dotbot = self.find_one_dotbot({'_id': ObjectId(str(result['dotbotId']))})
-        return dotflow
-
-    def find_one_dotflow(self, filters: dict) -> DotFlow:
+    def find_one_dotflow(self, filters: dict) -> DotFlowContainer:
         """
         Retrieve a DotFlow by filters.
 
@@ -323,26 +350,62 @@ class DotRepository():
             return None
         return self.marshall_dotflow(result)
 
-    def find_dotflow_by_id(self, dotflow_id) -> DotFlow:
+    def find_dotflow_by_container_id(self, container_id) -> DotFlowContainer:
         """
         Retrieve a dotflow by its ID.
 
-        :param dotflow_id: DotFlow ID
+        :param container_id: DotFlow ID
         :return: DotFlow instance or None if not found.
         """
-        return self.find_one_dotflow({"_id": ObjectId(str(dotflow_id))})
+        return self.find_one_dotflow({"_id": ObjectId(str(container_id))})
 
-    def find_dotflow_by_name(self, name) -> DotFlow:
+    def find_dotflow_by_idname(self, dotflow_idname) -> DotFlowContainer:
         """
-        Retrieve a dotflow by its name.
+        Retrieve a DotFlowContainer object by its ID or name.
 
-        :param name: DotFlow Name
-        :return: DotFlow instance or None if not found.
+        :param dotflow_idname: DotFlow ID or name
+        :return: DotFlowContainer instance or None if not found.
         """
-        return self.find_one_dotflow({'dotbot.name': name})
+        return self.find_one_dotflow({'$or': [{'dotflow.id': dotflow_idname}, {'dotflow.name': dotflow_idname}]})
 
-    def find_dotflows_by_dotbot_id(self, dotbot_id: str, fields: list=[]):
-        query = {'dotbotId': dotbot_id}
+    def find_dotflow_by_node_id(self, dotbot_id: str, node_id: str) -> DotFlowContainer:
+        """
+        Retrieve a DotFlowContainer object containing the specified node id
+
+        :param dotbot_id: DotBot ID
+        :param node_id: Node ID
+        :return: DotFlowContainer instance or None if not found.
+        """
+        return self.find_one_dotflow({'$and': [{'dotbotId': dotbot_id}, {'dotflow.nodes.id': node_id}]})
+
+    def find_node_by_id(self, dotbot_id: str, node_id: str) -> dict:
+        """
+        Retrieve a node by its id.
+
+        :param dotbot_id: DotBot ID.
+        :param node_id: Node ID.
+        :return:
+        """
+        dfc = self.find_dotflow_by_node_id(dotbot_id, node_id)
+        if not dfc:
+            return None
+
+        for n in dfc.dotflow['nodes']:
+            if n['id'] == node_id:
+                return n
+
+    def find_dotflows_by_dotbot_idname(self, dotbot_idname: str, fields: list=[]) -> list:
+        """
+        Retrieve a list of DotFlowContainer objects by DotBot id
+
+        :param dotbot_idname: DotBot id
+        :param fields: DotFlowContainer fields to project
+        :return: List of DotFlowContainer objects
+        """
+        # we don't know if it's id or name. retrieve dotbot anyway to get id by id or name
+        dotbot_container = self.find_dotbot_by_idname(dotbot_idname)
+
+        query = {'dotbotId': dotbot_container.dotbot['id']}
         projection = DotRepository.get_projection_from_fields(fields)
         return self.find_dotflows(query, projection)
 
@@ -363,13 +426,12 @@ class DotRepository():
         context_nodes = []
         for df in dotflows:
             for n in df.dotflow['nodes']:
-                if context in n['context']:
+                if context in n.get('context', []):
                     context_nodes.append(n)
 
-        print(context_nodes)
         return context_nodes
 
-    def create_dotflow(self, dotflow: dict, dotbot: DotBot) -> DotFlow:
+    def create_dotflow(self, dotflow: dict, dotbot: dict) -> DotFlowContainer:
         """
         Create a new dotflow.
 
@@ -378,38 +440,67 @@ class DotRepository():
         :param dotbot: A valid dotbot.
         :return: DotFlow created.
         """
+        oid = ObjectId()
+        if not dotflow.get('id'):  # Insert oid on dotflow id if not set
+            dotflow['id'] = str(oid)
+
         param = {
-            'dotflow': dotflow['dotflow'],
-            'dotbotId': dotbot.id,
+            '_id': oid,
+            'dotflow': dotflow,
+            'dotbotId': dotbot['id'],
             'createdAt': datetime.datetime.utcnow(),
             'updatedAt': datetime.datetime.utcnow()
         }
-        dotflow_id = self.mongo.dotflow.insert_one(param).inserted_id
-        return self.find_one_dotflow({"_id": ObjectId(str(dotflow_id))})
+        self.mongo.dotflow.insert_one(param)
+        return self.find_dotflow_by_container_id(oid)  #TODO maybe this should be done from the api?
 
-    def update_dotflow(self, dotflow_id: str, dotflow: dict) -> DotFlow:
+    def update_dotflow_by_container_id(self, container_id: str, dotflow: dict) -> DotFlowContainer:
         """
         Update a dotflow.
 
-        :param dotflow_id: DotFlow ID
+        :param container_id: DotFlowContainer ID
         :param name: Unique dotflow name in dotbot.
         :return: DotFlow updated.
         """
 
         # check updatedAt for mid-air collisions
 
-        self.mongo.dotflow.update_one({"_id": ObjectId(str(dotflow_id))},
-                                      {"$set": {"dotflow": dotflow['dotflow'],
+        self.mongo.dotflow.update_one({"_id": ObjectId(str(container_id))},
+                                      {"$set": {"dotflow": dotflow,
                                                 "updatedAt": datetime.datetime.utcnow()}})
-        return self.find_one_dotflow({"_id": ObjectId(str(dotflow_id))})
+        return self.find_dotflow_by_container_id(container_id)
 
-    def delete_dotflow(self, dotflow_id: str) -> None:
+    def update_dotflow_by_idname(self, dotflow_idname: str, dotflow: dict) -> DotFlowContainer:
+        """
+        Update a dotflow.
+
+        :param dotflow_idname: DotFlow ID
+        :param name: Unique dotflow name in dotbot.
+        :return: DotFlow updated.
+        """
+
+        # check updatedAt for mid-air collisions
+
+        self.mongo.dotflow.update_one({'$or': [{'dotflow.id': dotflow_idname}, {'dotflow.name': dotflow_idname}]},
+                                      {"$set": {"dotflow": dotflow,
+                                                "updatedAt": datetime.datetime.utcnow()}})
+        return self.find_dotflow_by_idname(dotflow_idname)
+
+    def delete_dotflow_by_container_id(self, container_id: str) -> None:
         """
         Delete a dotflow.
 
-        :param dotflow_id: DotFlow ID
+        :param container_id: DotFlowContainer ID
         """
-        self.mongo.dotflow.delete_one({"_id": ObjectId(str(dotflow_id))})
+        self.mongo.dotflow.delete_one({"_id": ObjectId(str(container_id))})
+
+    def delete_dotflow_by_idname(self, dotflow_idname: str) -> None:
+        """
+        Delete a dotflow.
+
+        :param dotflow_idname: DotFlow ID
+        """
+        self.mongo.dotflow.delete_one({'$or': [{'dotflow.id': dotflow_idname}, {'dotflow.name': dotflow_idname}]})
 
     def find_dotflow_formids(self, dotbot_id: str) -> list:
         """
