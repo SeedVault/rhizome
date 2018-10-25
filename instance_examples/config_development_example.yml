@@ -12,14 +12,52 @@ bbot:
     chatbot_engines:
         dotflow2:
             plugin_class: engines.dotflow2.chatbot_engine.DotFlow2
-            plugins:
-                template:
-                    plugin_class: bbot.plugins.template_jinja2.PluginTemplateEngine
+            logger_level: DEBUG
+            session:
+                plugin_class: engines.dotflow2.session_mongodb.SessionMongoDB
+                uri: <%= ENV['MONGODB_URI'] %>
+            cache:
+                plugin_class: bbot.cache_classvar.CacheClassvar
             dotdb:
                 plugin_class: dot_repository.mongodb.DotRepository
                 uri: <%= ENV['MONGODB_URI'] %>
-            session:
-                plugin_class: engines.dotflow2.session_mongodb.SessionMongoDB
+            template_engine:
+                plugin_class: engines.dotflow2.extensions.template_templetor.PluginTemplateEngine
+                logger_level: DEBUG
+            extensions:
+                core:
+                    plugin_class: engines.dotflow2.core_functions.DotFlow2CoreFunctions
+                    logger_level: DEBUG
+                response_output:
+                    plugin_class: engines.dotflow2.extensions.response_output.DotFlow2ResponseOutput
+                    logger_level: DEBUG
+                chatscript_match:
+                    plugin_class: engines.dotflow2.extensions.chatscript_match.DotFlow2ChatScriptMatch
+                    logger_level: DEBUG
+                    server_host: <%= ENV['CHATSCRIPT_SERVER_FLOWEXT_HOST'] %>
+                    server_port: <%= ENV['CHATSCRIPT_SERVER_FLOWEXT_PORT'] %>
+                    server_bot_id: <%= ENV['CHATSCRIPT_SERVER_FLOWEXT_BOT_ID'] %>
+                send_email:
+                    plugin_class: engines.dotflow2.extensions.send_email.DotFlow2SendEmail
+                    logger_level: DEBUG
+                mscs_sentiment_analysis:
+                    plugin_class: engines.dotflow2.extensions.mscs_sentiment_analysis.DotFlow2MSCSSentimentAnalysis
+                    logger_level: DEBUG
+                    azure_location: <%= ENV['AZURE_LOCATION'] %>
+                    azure_subscription_key: <%= ENV['AZURE_SUBSCRIPION_KEY'] %>
+                weather_report:
+                    plugin_class: engines.dotflow2.extensions.weather_report.DotFlow2WeatherReport
+                    logger_level: DEBUG
+                    accuweather_api_key: <%= ENV['ACCUWEATHER_API_KEY'] %>
+        chatscript:
+            plugin_class: engines.chatscript.chatbot_engine.ChatScript
+            dotdb:
+                plugin_class: dot_repository.mongodb.DotRepository
+                uri: <%= ENV['MONGODB_URI'] %>
+        python:
+            plugin_class: engines.python.chatbot_engine.Python
+            dotdb:
+                plugin_class: dot_repository.mongodb.DotRepository
                 uri: <%= ENV['MONGODB_URI'] %>
         flow:
             plugin_class: engines.flow.chatbot_engine.Flow
@@ -93,22 +131,36 @@ logging:
     root:
         level: NOTSET
         handlers: [console]
-
     loggers:
         bbot:
-            level: NOTSET
+            level: DEBUG
             handlers: [console]
             qualname: bbot
             propagate: false
         dotflow2:
-            level: NOTSET
+            level: DEBUG
             handlers: [console]
             qualname: dotflow2
+            propagate: false
+        df2_ext:
+            level: DEBUG
+            handlers: [console]
+            qualname: df2_ext
+            propagate: false
+        chatscript:
+            level: NOTSET
+            handlers: [console]
+            qualname: chatscript
             propagate: false
         channel_telegram:
             level: NOTSET
             handlers: [console]
             qualname: channel_telegram
+            propagate: false
+        channel_restful:
+            level: NOTSET
+            handlers: [console]
+            qualname: channel_restful
             propagate: false
 
     handlers:
@@ -116,17 +168,17 @@ logging:
             class: logging.StreamHandler
             stream: ext://sys.stdout
             formatter: simpleFormatter
-            level: NOTSET
+            level: DEBUG
         logfile:
             class: logging.FileHandler
             filename: /tmp/bbot.log
             formatter: simpleFormatter
-            level: NOTSET
+            level: DEBUG
 
     formatters:
         simpleFormatter:
             class: logging.Formatter
-            format: '%(name)s %(asctime)s %(levelname)s %(message)s'
+            format: '%(name)-20s %(asctime)s %(bot_name)s %(user_id)s %(levelname)-8s %(message)s'
             datefmt: '%d/%m/%Y %H:%M:%S'
 
 

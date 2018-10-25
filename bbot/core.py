@@ -5,6 +5,7 @@ import importlib
 import logging
 import logging.config
 import smokesignal
+from logging.config import DictConfigurator
 
 from typing import Any
 
@@ -135,12 +136,12 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
         :return:
         """
         if not bot.is_fallback and (response.get('noMatch') or response.get('error')):
-            self.logger.debug('Bot engine has a no match. Looking fallback bots')
+            self.logger_core.debug('Bot engine has a no match. Looking fallback bots')
 
             # try import bots
             fbbs = bot.dotbot.get('fallbackBots', [])
             for bot_name in fbbs:
-                self.logger.debug(f'Trying with bot {bot_name}')
+                self.logger_core.debug(f'Trying with bot {bot_name}')
                 bot_dotbot_container = bot.dotdb.find_dotbot_by_name(bot_name)
                 if not bot_dotbot_container:
                     raise Exception(f'Fallback bot not found {bot_name}')
@@ -152,15 +153,15 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
                 req = ChatbotEngine.create_request(bot.request['input'], bot.user_id, 1, 1)
                 fallback_response = bbot.get_response(req)
                 if fallback_response.get('error'):
-                    self.logger.error('Fallback bot returned an invalid response. Discarding.')
+                    self.logger_core.error('Fallback bot returned an invalid response. Discarding.')
                     continue
                 if not fallback_response.get('noMatch'):
-                    self.logger.debug('Fallback bot has a response. Returning this to channel.')
+                    self.logger_core.debug('Fallback bot has a response. Returning this to channel.')
                     return fallback_response
             if fbbs:
-                self.logger.debug('Fallback bot don\'t have a response either. Sending original main bot response if any')
+                self.logger_core.debug('Fallback bot don\'t have a response either. Sending original main bot response if any')
             else:
-                self.logger.debug('No fallback defined for this bot. Sending original main bot response if any')
+                self.logger_core.debug('No fallback defined for this bot. Sending original main bot response if any')
         return response
 
 
@@ -278,8 +279,56 @@ def create_bot(config: dict, dotbot: dict={}) -> ChatbotEngine:
 
     bot = Plugin.load_plugin(config["bbot"]["chatbot_engines"][chatbot_engine], dotbot)
     logging.config.dictConfig(config['logging'])
-    bot.logger = logging.getLogger('bbot')
-    if hasattr(bot, 'init_plugins'):
-        bot.init_plugins()
+    bot.logging_config = config['logging']
+
+    bot.logger_core = BBotLoggerAdapter(logging.getLogger('bbot'), bot, bot)
+    if hasattr(bot, 'init_engine'):
+        bot.init_engine()
     return bot
 
+
+class BBotLoggerAdapter(logging.LoggerAdapter):
+    """
+    Custom Logger Adapter to add some context data and more control on DotFlow extensions logging behavior
+    """
+
+    def __init__(self, logger, module: object, bot: ChatbotEngine, mod_name=''):
+        """
+
+        :param logger:
+        :param module:
+        :param bot:
+        :param mod_name:
+        """
+        super().__init__(logger, {})
+
+        self.bot = bot
+        self.mod_name = mod_name
+
+        if module.logger_level:
+            self.setLevel(logging.getLevelName(module.logger_level))
+
+        """ custom handlers dont work
+        if module.config.get('logger_handler'):
+            df = DictConfigurator(bot.logging_config)
+            handler_config = bot.logging_config['handlers'][module.config['logger_handler']]
+            self.logger.addHandler(df.configure_handler(handler_config))
+        """
+
+    def process(self, msg, kwargs):
+        """
+
+        :param msg:
+        :param kwargs:
+        :return:
+        """
+        # We need to set extras here because we need bot object ref to get user_id when available (it's not available at extension's init)
+        extra = {
+            'bot_id': self.bot.dotbot['id'],
+            'bot_name': self.bot.dotbot['name'],
+            'user_id': getattr(self.bot, 'user_id', '<no user id>'),
+            'user_ip': getattr(self.bot, 'user_ip', '<no IP>')
+        }
+
+        kwargs["extra"] = extra
+        return msg, kwargs

@@ -1,10 +1,10 @@
-"""Template engine."""
+"""Cache for run-time persistance."""
 from bbot.core import Cache
 
 class CacheClassvar(Cache):
     """Cache."""
 
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: dict, dotbot: dict) -> None:
         """
         Initialize the plugin.
 
@@ -26,4 +26,3 @@ class CacheClassvar(Cache):
         super().get()
         return self.cache.get(key)
 
-        

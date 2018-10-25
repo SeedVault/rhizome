@@ -29,7 +29,7 @@ class Python(ChatbotEngine):
         bot.logger = logging.getLogger("python")
         response =  bot.get_response(request)
 
-        self.logger.debug("PythonBot response BBOT format: " + str(response))
+        bot.logger.debug("PythonBot response BBOT format: " + str(response))
         return response
 
 

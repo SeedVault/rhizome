@@ -1,24 +1,23 @@
-# BBot bot engine
+# Rhizome bot engine
 
 ### Introduction
 
-BBot is a conversational bot engine created by Botanic/SEED team that uses .Bot specification to define a conversational bot and .Flow standard to determine the flow of the conversation.
+Rhizome is a conversational bot engine created by Botanic/SEED team that uses .Bot specification to define a conversational bot and runs .Flow intermediate language to determine the flow of the conversation.
 
 Part of the SEED token project. This is a sneak preview - there is more to come.
 See [the Wiki](https://github.com/SeedVault/SEEDtoken-IP/wiki) for more information.
 
 ## Features
-- Runs .Flow v1.0 with flow extensions support for Text, Buttons, Media cards, Forms, Send email, Variable storing and comparisson operators.
-- Template engine support for text output compatible with Jinja2. Added weather report function.
-- Intent match plugins support for regular expressions, ChatScript patterns and Microsoft's Cognitive Service Luis.
+- Support .Bot v1.1 (see https://github.com/SeedVault/bot)
+- Support .Flow v1.0 with flow extensions support for Text, Buttons, Media cards, Forms, Send email, Variable storing and comparisson operators.
+- Support .Flow v2.0 with basic functionality (see https://github.com/SeedVault/flow)
+- Template engine support for text output compatible with Jinja2.
 
 ## To-do
 
 - Support .Flow v2.0 full specification.
-- Support .Bot v1.1.
 - Add extensions to support all .Flow v2.0 functions, filters and operators.
-- Add channels Telegram, Skype, Slack, Facebook, Signal, Kik and Twitter.
-- Add debug response with executed functions and its responses, matched paths and current node data.
+- Add channels Skype, Slack, Facebook, Signal, Kik and Twitter.
 - Add commands for bot developer and channels to control bot flow and session.
 
 ## Getting Started
@@ -40,13 +39,13 @@ local machine for development and testing purposes.
 1) Clone project repository:
 
 ```
-git clone git@github.com:botanicinc/bbot-py.git
+git clone https://github.com/SeedVault/rhizome.git
 ```
 
 2) Use pipenv to create a virtual environment:
 
 ```
-cd bbot-py
+cd rhizome
 pipenv shell
 ```
 
@@ -87,25 +86,41 @@ cp ./instance_examples/flow_script_example.json ./instance/flow_script.json
 to change configuration settings.
 
 
-## Running tests
-
-```
-make test
-```
-
 ## Running console channel
 
 ```
-make console
+BBOT_ENV=development make console <userid> <botid> <orgid> debug|nodebug
 ```
 
-## Running web channel
+## Running a RESTful web server and a simple chatbot web widget (plain text only)
 
 ```
-make web
+BBOT_ENV=development gunicorn "channels.restful.app:create_app()" -b localhost:5000 --reload
 ```
 
 Open a web browser and navigate to http://localhost:5000/TestWebChatBot
+
+## Running Telegram channel
+
+Run this first to set Telegram web-hooks of all bots with Telegram channel enabled in its .Bot configuration.
+```
+BBOT_ENV=development python -m channels.telegram.webhooks_check
+``` 
+ 
+This runs the Telegram web-hook server on port 5001. 
+Be sure to configure a reverse-proxy server to listen to the Telegram web-hooks properly.
+
+```
+BBOT_ENV=development gunicorn "channels.telegram.app:create_app()" -b localhost:5001 --reload
+```
+
+## Running Dot Repository server
+This is a RESTful server used to access .Bot and .Flow databases by Greenhouse and Dandelion.
+
+```
+BBOT_ENV=development gunicorn "dot_repository.api:app" -b localhost:8000 --reload
+```
+
 
 ## Disclaimer
 
@@ -116,7 +131,7 @@ SEED democratizes AI by offering an open and independent alternative to the mono
 
 ### Documentation
 - [.Flow standard](https://github.com/SeedVault/flow) to know more about the standard used to create the conversation dialogs.
-- [.Bot description](https://github.com/SeedVault/bot) to see the format of the configuration file used by BBOT to create bots.
+- [.Bot description](https://github.com/SeedVault/bot) to see the format of the configuration file used by Rhizome to create bots.
 
 ### Connect
 Feel free to throw general questions regarding SEED and what to expect in the following months here on GitHub (or GitLab) at  @consiliera (gaby@seedtoken.io) :sunny: 

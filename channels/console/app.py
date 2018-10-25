@@ -35,21 +35,22 @@ dotbotContainer = console.dotdb.find_dotbot_by_idname(bot_id)
 if not dotbotContainer:
     raise Exception('Couldn\'t find the bot')
 
-bot = create_bot(config, dotbotContainer.dotbot)
 while True:
     input_text = input("You: ")
     if input_text.lower() in ["!quit", "!bye"]:
         print("BBot: Bye!\n")
         sys.exit(0)
+
+    bot = create_bot(config, dotbotContainer.dotbot)  # create new bot each volley to get same behavior as others stateless channels
     request = ChatbotEngine.create_request({'text': input_text}, user_id, bot_id, org_id)
     response = bot.get_response(request)
 
     if debug == 'debug':
-        print(f"Debug: {response}")
+        print('Debug: ' + str(response))
 
     for r in response['output']:
-        for text in r.get('text', []):
-            print(f"BBot: {text}")
+        if r.get('text'):
+            print('BBot: ' + str(r['text']))
 
 
 
