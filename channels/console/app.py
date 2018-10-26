@@ -50,7 +50,7 @@ while True:
 
     for r in response['output']:
         if r.get('text'):
-            print('BBot: ' + str(r['text']))
+            print(bot.dotbot['name'].capitalize() + ': ' + str(r['text']))
 
 
 
