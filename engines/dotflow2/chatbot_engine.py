@@ -311,32 +311,21 @@ class DotFlow2(ChatbotEngine):
 
         return True
 
-
-    def execute_function(self, dotflow2_obj, f_type: str):
+    def execute_function(self, dotflow2_obj, f_type: str, render: bool=False):
         """
         This runs DotFlow2 instructions. It accepts objects with DotFlow2 functions or strings which will be executed as templates
-        @TODO stop execution when running boolean operator $and and found False value argument (avoids running non needed time consuming functions)
 
         :param dotflow2_obj:
         :return:
         """
         self.nested_level_exec += 1
         self.logger_df2.debug('Trying to execute object: ' + str(dotflow2_obj))
-        if self.is_dotflow2_function(dotflow2_obj):
-            self.logger_df2.debug('The object is DotFlow2 function')
-            func_name = self.get_func_name_from_dotflow2_obj(dotflow2_obj)
-            args = self.get_args_from_dotflow2_obj(dotflow2_obj)
-            if type(args) is not list:
-                args = [args]
-            response = self.call_dotflow2_function(func_name, args, f_type)
 
-        elif self.is_template(dotflow2_obj):
-            self.logger_df2.debug('The object is a template (has {% tags %} or {{ interpolations }})')
-            response = self.template_engine.render(dotflow2_obj)
-
-        else:  # it's a value so return it as response
-            self.logger_df2.debug('The object is a value')
-            response = dotflow2_obj
+        func_name = self.get_func_name_from_dotflow2_obj(dotflow2_obj)
+        args = self.get_args_from_dotflow2_obj(dotflow2_obj)
+        if type(args) is not list:
+            args = [args]
+        response = self.call_dotflow2_function(func_name, args, f_type)
 
         self.logger_df2.debug('object response: ' + str(response))
         self.nested_level_exec -= 1
@@ -359,14 +348,6 @@ class DotFlow2(ChatbotEngine):
         except Exception as e:
             return False
         return False
-
-    def is_template(self, value) -> bool:
-        """
-        Returns true if the value is a template
-        :param value:
-        :return:
-        """
-        return type(value) is str and (('{%' in value and '%}' in value) or ('{{' in value and '}}' in value))
 
     def get_func_name_from_dotflow2_obj(self, bbot_obj: dict) -> str:
         """
@@ -421,15 +402,29 @@ class DotFlow2(ChatbotEngine):
         })
         return response
 
-    def resolve_arg(self, arg, f_type):
+    def resolve_arg(self, arg, f_type, render: bool=False):
         """
 
         :param arg:
         :return:
         """
         self.logger_df2.debug('Will try to resolve arg: ' + str(arg))
-        resolved_arg = self.execute_function(arg, f_type)
-        self.logger_df2.debug('Got resolved arg: ' + str(resolved_arg))
+
+        if self.is_dotflow2_function(arg):
+            self.logger_df2.debug('The object is DotFlow2 function. Will try to execute it.')
+            resolved_arg = self.execute_function(arg, f_type, render)
+
+        else:  # it's a value so return it as response
+            self.logger_df2.debug('The object is a value')
+            resolved_arg = arg
+
+        self.logger_df2.debug('Got resolved arg (no rendered): ' + str(resolved_arg))
+
+        if render is True and type(resolved_arg) is str:
+            self.logger_df2.debug('The running instruction asked to render this value')
+            resolved_arg = self.template_engine.render(arg)
+            self.logger_df2.debug('Got resolved arg (rendered): ' + str(resolved_arg))
+
         return resolved_arg
 
     def is_command(self, input_text: str)-> bool:
@@ -449,17 +444,19 @@ class DotFlow2(ChatbotEngine):
         :return:
         """
         command = command[1:]  # get rid of colon prefix
-        response = ''
+        response = 'Unknown command. Try :help'
         self.logger_df2.info(f"Executing command {command}")
 
-        # :df2 dotflow2function(arg1,arg2,arg3...)  --- pretty basic parsing here @TODO improve this with $code function
-
+        # :df2 dotflow2function(arg1,arg2,arg3...)
         if command.startswith('df2 '):
-            first_p = command.find('(')
-            f_name = command[4:first_p]
-            args = command[first_p + 1:-1]
-            args = args.split(',')
-            response = self.call_dotflow2_function(f_name, args, '')
+            code = '$code:\n\toutput = ' + command[4:] + '\n$output'  # @TODO temporal solution. we have to do something for $code. this or add output stream
+            response = self.template_engine.render(code)
+
+        # :instructionsList will list all supported DotFlow2 instructions
+        elif command == 'df2InstructionsList':
+            f_list = ['$' + s for s in self.dotflow2_functions_map]  # add $ prefix to each .flow instruction
+            instructions_list = ", ".join(f_list)
+            response = "Supported .Flow v2 instructions:\n" + instructions_list
 
         return response
 

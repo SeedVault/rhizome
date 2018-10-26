@@ -53,9 +53,9 @@ class DotFlow2ResponseOutput():
         else:
             msg_idx = 0
 
-        msg = self.bot.resolve_arg(args[msg_idx], f_type)  # no need to resolve arg before this
+        msg = self.bot.resolve_arg(args[msg_idx], f_type, True)  # no need to resolve arg before this
 
-        return {'text': msg}
+        return {'text': str(msg)}
 
     def df2_image(self, args, f_type):
         """
@@ -66,7 +66,7 @@ class DotFlow2ResponseOutput():
         :return:
         """
         try:
-            image_url = self.bot.resolve_arg(args[0], f_type)
+            image_url = self.bot.resolve_arg(args[0], f_type, True)
         except IndexError:
             raise BBotException({'code': 210, 'function': 'image', 'arg': 0, 'message': 'Image URL in arg 0 is missing.'})
 
@@ -85,7 +85,7 @@ class DotFlow2ResponseOutput():
         :return:
         """
         try:
-            video_url = self.bot.resolve_arg(args[0], f_type)
+            video_url = self.bot.resolve_arg(args[0], f_type, True)
         except IndexError:
             raise BBotException({'code': 220, 'function': 'video', 'arg': 0, 'message': 'Video URL in arg 0 is missing.'})
 
@@ -104,7 +104,7 @@ class DotFlow2ResponseOutput():
         :return:
         """
         try:
-            audio_url = self.bot.resolve_arg(args[0], f_type)
+            audio_url = self.bot.resolve_arg(args[0], f_type, True)
         except IndexError:
             raise BBotException({'code': 230, 'function': 'audio', 'arg': 0, 'message': 'Audio URL in arg 0 is missing.'})
 
