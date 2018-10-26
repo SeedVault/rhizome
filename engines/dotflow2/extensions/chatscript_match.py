@@ -31,6 +31,7 @@ class DotFlow2ChatScriptMatch():
         self.bot = bot
         self.logger = DotFlow2LoggerAdapter(logging.getLogger('df2_ext.csMatch'), self, self.bot, '$chatscriptMatch')
         bot.register_dotflow2_function('chatscriptMatch', {'object': self, 'method': 'chatscriptMatch'})
+        bot.register_template_function('chatscriptMatch', {'object': self, 'method': 'chatscriptMatch'})
 
     def chatscriptMatch(self, args, f_type):
         """
@@ -128,13 +129,12 @@ class DotFlow2ChatScriptMatch():
                 try:
                     var_name = entities_var_names[match_variable_n]
                     self.bot.session.set_var(self.bot.user_id, var_name, var_value)
-                    self.bot.detected_entities[var_name] = var_value  # @TODO this value should be sent to response only if the conditional returns True
+                    self.bot.detected_entities[
+                        var_name] = var_value  # @TODO this value should be sent to response only if the conditional returns True
                     self.logger.info('Storing match variable "_' + str(match_variable_n) +
-                                              '" in DotFlow2 variable "' + var_name + '" with value "' + var_value + '"')
-
-                except Exception as e:  # just a warning for now @TODO this should be reported to the botdev
+                                     '" in DotFlow2 variable "' + var_name + '" with value "' + var_value + '"')
+                except IndexError:
                     self.logger.warning('ChatScript detected a match variable but there is no entity variable name provided')
-                    raise e
 
     def send(self, input_text):
         """
