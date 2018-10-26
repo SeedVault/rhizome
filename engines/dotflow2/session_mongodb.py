@@ -50,7 +50,7 @@ class SessionMongoDB(Session):
             return ""
 
         return var_value
-        
+
 
 
     def set(self, user_id: str, key: str, value: str) -> None:
@@ -96,7 +96,12 @@ class SessionMongoDB(Session):
         final_key = "user_vars"
         if key:
             final_key += "." + key
-        return self.get(user_id, final_key)
+
+        ret = self.get(user_id, final_key)
+        if not key and type(ret) is not dict:  # if asked for all user vars return empty dict, not empty string
+            ret = {}
+
+        return ret
 
 
     def get_dot_notation(self, d: dict, dotted_key: str) -> Any:

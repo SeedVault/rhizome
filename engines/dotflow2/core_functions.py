@@ -29,7 +29,7 @@ class DotFlow2CoreFunctions():
         self.logger = DotFlow2LoggerAdapter(logging.getLogger('df2_ext.core'), self, self.bot, 'DF2CoreFnc')
 
         self.functions = ['input', 'eq', 'gt', 'lt', 'gte', 'lte', 'code', 'goto', 'return',
-                          'store', 'variable', 'regexMatch', 'and', 'or']
+                          'set', 'get', 'regexMatch', 'and', 'or']
 
         for f in self.functions:
             bot.register_dotflow2_function(f, {'object': self, 'method': 'df2_' + f})
@@ -74,7 +74,7 @@ class DotFlow2CoreFunctions():
 
     #### Storing user data
 
-    def df2_store(self, args, f_type):
+    def df2_set(self, args, f_type):
         """
         Stores values on user variables.
 
@@ -85,18 +85,18 @@ class DotFlow2CoreFunctions():
         try:
             var_name = self.bot.resolve_arg(args[0], f_type)
         except IndexError:
-            raise BBotException({'code': 110, 'function': 'store', 'arg': 0, 'message': 'Variable name missing.'})
+            raise BBotException({'code': 110, 'function': 'set', 'arg': 0, 'message': 'Variable name missing.'})
         if type(var_name) is not str:
-            raise BBotException({'code': 111, 'function': 'store', 'arg': 0, 'message': 'Variable name should be a string.'})
+            raise BBotException({'code': 111, 'function': 'set', 'arg': 0, 'message': 'Variable name should be a string.'})
 
         try:
             var_value = self.bot.resolve_arg(args[1], f_type)
         except IndexError:
-            raise BBotException({'code': 112, 'function': 'store', 'arg': 1, 'message': 'Variable value missing.'})
+            raise BBotException({'code': 112, 'function': 'set', 'arg': 1, 'message': 'Variable value missing.'})
 
         self.bot.session.set_var(self.bot.user_id, var_name, var_value)
 
-    def df2_variable(self, args, f_type) -> any:
+    def df2_get(self, args, f_type) -> any:
         """
         Return value stored in user variable
 
@@ -107,9 +107,9 @@ class DotFlow2CoreFunctions():
         try:
             var_name = self.bot.resolve_arg(args[0], f_type)
         except IndexError:
-            raise BBotException({'code': 120, 'function': 'variable', 'arg': 0, 'message': 'Variable name missing.'})
+            raise BBotException({'code': 120, 'function': 'get', 'arg': 0, 'message': 'Variable name missing.'})
         if type(var_name) is not str:
-            raise BBotException({'code': 121, 'function': 'store', 'arg': 0, 'message': 'Variable name should be a string.'})
+            raise BBotException({'code': 121, 'function': 'get', 'arg': 0, 'message': 'Variable name should be a string.'})
 
         return self.bot.session.get_var(self.bot.user_id, var_name)
 
@@ -127,6 +127,7 @@ class DotFlow2CoreFunctions():
     def df2_code(self, args, f_type):
         """
         !!!!WARNING!!!! THIS FUNCTION RUNS UNRESTRICTED PYTHON CODE. DON'T EXPOSE IT TO PUBLIC ACCESS!!
+        @TODO this will be replaced by Templator template
 
         This function is used to run any python code on conditions and responses objects.
         Of course you can use DotFlow2 functions inside it

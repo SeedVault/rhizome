@@ -458,6 +458,10 @@ class DotFlow2(ChatbotEngine):
             instructions_list = ", ".join(f_list)
             response = "Supported .Flow v2 instructions:\n" + instructions_list
 
+        elif command == 'reset all':
+            self.session.reset_all(self.user_id)
+            response = "All user session data erased."
+
         return response
 
     def extensions_cache(func):
