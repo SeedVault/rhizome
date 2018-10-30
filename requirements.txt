@@ -1,15 +1,24 @@
 -i https://pypi.org/simple
-certifi==2018.8.13
+aniso8601==4.0.1
+certifi==2018.10.15
 chardet==3.0.4
-click==6.7
+click==7.0
+flask-restful==0.3.6
 flask==1.0.2
+gunicorn==19.9.0
 idna==2.7
-itsdangerous==0.24
+itsdangerous==1.1.0
 jinja2==2.10
 markupsafe==1.0
-pymongo==3.7.1
+marshmallow==3.0.0b19
+more-itertools==4.3.0
+py-bcrypt==0.4
+pymongo==3.7.2
 python-dotenv==0.9.1
-pyyaml==3.13
-requests==2.19.1
-urllib3==1.23; python_version >= '2.6'
+pytz==2018.7
+pyyaml==4.2b4
+requests==2.20.0
+six==1.11.0
+smokesignal==0.7.0
+urllib3==1.24
 werkzeug==0.14.1
