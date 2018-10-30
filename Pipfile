@@ -17,6 +17,7 @@ marshmallow = "*"
 gunicorn = "*"
 smokesignal = "*"
 "jinja2" = "*"
+web-py = "==0.40.dev1"
 
 [dev-packages]
 pytest = "*"
