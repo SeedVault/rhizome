@@ -25,9 +25,6 @@ clean:
 	@find . -name "*.pyc" -print0 | xargs -0 rm -rf
 	@find . -name "*.pyo" -print0 | xargs -0 rm -rf
 
-console: clean
-	@python -m channels.console.app $(MAKECMDGOALS)
-
 coverage: clean
 	@rm -rf htmlcov
 	@rm -rf .coverage
@@ -62,7 +59,3 @@ uml: clean
 	dot -Tpng classes.dot -Nfontname=Arial -Nfontsize=10 -Efontname=Arial -Efontsize=10 -s1 -o classes.png && \
 	dot -Tpng packages.dot -Nfontname=Arial -Nfontsize=10 -Efontname=Arial -Efontsize=10 -s1 -o packages.png
 	@rm classes.dot packages.dot
-
-web: clean
-	@flask run
-

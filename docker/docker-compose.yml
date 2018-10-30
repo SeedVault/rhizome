@@ -40,6 +40,7 @@ services:
             - ./volumes/data/db:/data/db
             - ./volumes/var/log/mongodb:/var/log/mongodb
             - ./volumes/home/mongodb:/home/mongodb
+            - ./seed:/seed
 
     mongo-express:
         image: mongo-express

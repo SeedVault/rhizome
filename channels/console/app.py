@@ -28,7 +28,7 @@ if len(sys.argv) <= 4:
 
 print("Type \"quit\" or \"bye\" to leave chat\n\n")
 
-user_id, bot_id, org_id, debug = sys.argv[2:]
+user_id, bot_id, org_id, debug = sys.argv[1:]
 
 
 dotbotContainer = console.dotdb.find_dotbot_by_idname(bot_id)

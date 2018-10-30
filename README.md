@@ -75,21 +75,32 @@ cp ./instance_examples/config_development_example.yml ./instance/config_developm
 cp ./instance_examples/config_testing_example.yml ./instance/config_testing.yml
 ```
 
-6) Copy sample bot and its script:
-
-```
-cp ./instance_examples/flow_dotbot_example.json ./instance/flow_dotbot.json
-cp ./instance_examples/flow_script_example.json ./instance/flow_script.json
-```
-
-7) Edit files **./instance/.env_development** and **./instance/.env_testing**
+6) Edit files **./instance/.env_development** and **./instance/.env_testing**
 to change configuration settings.
 
 
+7) Seed database in the container
+
+This will seed the database with a demo bot.
+If you are not using the container you can find the extended json files in /docker/seed folder.
+
+```
+docker exec -it docker_mongo_1 bash /seed/seedmongo.sh <databasename>
+```
 ## Running console channel
 
 ```
-BBOT_ENV=development make console <userid> <botid> <orgid> debug|nodebug
+BBOT_ENV=development python -m channels.console.app <userId> <botIdOrName> <orgId> debug|nodebug
+```
+
+userId: Any alphanumeric ID to identify yourself.
+botIdOrName: The bot ID or bot name you want to run. You can find this in dotbot collection in mongo database
+orgId: Organization ID (not supported yet) 
+debug|nodebug: debug will show the raw json object returned by the bot engine. nodebug will just show text.
+
+Try the included demo bot with:
+```
+BBOT_ENV=development python -m channels.console.app joe testbot 1 debug
 ```
 
 ## Running a RESTful web server and a simple chatbot web widget (plain text only)
