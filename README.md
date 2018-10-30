@@ -93,10 +93,10 @@ docker exec -it docker_mongo_1 bash /seed/seedmongo.sh <databasename>
 BBOT_ENV=development python -m channels.console.app <userId> <botIdOrName> <orgId> debug|nodebug
 ```
 
-userId: Any alphanumeric ID to identify yourself.
-botIdOrName: The bot ID or bot name you want to run. You can find this in dotbot collection in mongo database
-orgId: Organization ID (not supported yet) 
-debug|nodebug: debug will show the raw json object returned by the bot engine. nodebug will just show text.
+**userId**: Any alphanumeric ID to identify yourself.\
+**botIdOrName**: The bot ID or bot name you want to run. You can find this in dotbot collection in mongo database\
+**orgId**: Organization ID (not supported yet)\ 
+**debug|nodebug**: debug will show the raw json object returned by the bot engine. nodebug will just show text.
 
 Try the included demo bot with:
 ```
