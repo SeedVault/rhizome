@@ -67,4 +67,8 @@ class PluginTemplateEngine():
 
         self.logger.debug('Template response: "' + response + '"')
 
+        if response.find('<function DotFlow2FunctionsProxy') is not -1:
+            self.logger.warning('Templator returned an invalid response. Botdev forgot to escape $?')
+            response = '<TEMPLATE RENDERING ERROR. CHECK DEBUG DATA>'  # @TODO add debug data in context to the instruction executed
+
         return response

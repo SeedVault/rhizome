@@ -268,22 +268,33 @@ class DotFlow2(ChatbotEngine):
                 self.logger_df2.info('Loading context node "' + n['id'] + '"')
                 for p in n['paths']:
                     self.logger_df2.info('Loading node path "' + p['id'] + '"')
-                    if p.get('conditions') is not None:  # Checks if conditions exists
-                        self.logger_df2.info('@@@@@@@@@@@@@@ Trying to execute conditions object: ' + str(p['conditions']) + ' @@@@@@@@@@@@@')
-                        result = self.execute_function(p['conditions'], 'C')
-                        self.logger_df2.debug('Response object: ' + str(result))
-                    else:
-                        self.logger_df2.info('Conditions attr doesn\'t exists. Set default as True')
-                        result = True  # Conditions attr doesn't exists so we return True as default
+                    result = self.resolve_conditions(p.get('conditions'))
 
                     self.logger_df2.info('CONDITIONS RESULT: ' + str(result))
-                    if result == True:
+                    if result is True:
                         self.logger_df2.info('>>>>>>> Found a matching path: ' + p['id'] + ' from node: ' + n['id'])
                         matching_node = n
-                        matching_path = p
-                        break
+                        return p  # @TODO this stops when match is found. We will change thi when implementing ML matching instruction based on confidence score
 
-        return matching_path
+        return False
+
+    def resolve_conditions(self, conditions_expression):
+        """
+        Resolves the conditions expression object
+
+        :param self:
+        :param conditions_expression:
+        :return:
+        """
+        if conditions_expression is None or conditions_expression is True:  # if conditions is non existent or True, return True
+            result = True
+        else:
+            self.logger_df2.info(
+                '@@@@@@@@@@@@@@ Trying to execute conditions object: ' + str(conditions_expression) + ' @@@@@@@@@@@@@')
+            result = self.execute_function(conditions_expression, 'C')
+            self.logger_df2.debug('Response object: ' + str(result))
+
+        return result
 
     def run_responses(self, path) -> True:
         """
@@ -326,8 +337,8 @@ class DotFlow2(ChatbotEngine):
         if type(args) is not list:
             args = [args]
         response = self.call_dotflow2_function(func_name, args, f_type)
+        self.logger_df2.debug('Object response: ' + str(response))
 
-        self.logger_df2.debug('object response: ' + str(response))
         self.nested_level_exec -= 1
         return response
 
@@ -422,7 +433,7 @@ class DotFlow2(ChatbotEngine):
 
         if render is True and type(resolved_arg) is str:
             self.logger_df2.debug('The running instruction asked to render this value')
-            resolved_arg = self.template_engine.render(arg)
+            resolved_arg = self.template_engine.render(resolved_arg)
             self.logger_df2.debug('Got resolved arg (rendered): ' + str(resolved_arg))
 
         return resolved_arg
@@ -443,6 +454,7 @@ class DotFlow2(ChatbotEngine):
         :param command:
         :return:
         """
+        #@TODO refactor all this code
         command = command[1:]  # get rid of colon prefix
         response = 'Unknown command. Try :help'
         self.logger_df2.info(f"Executing command {command}")
@@ -456,11 +468,17 @@ class DotFlow2(ChatbotEngine):
         elif command == 'df2InstructionsList':
             f_list = ['$' + s for s in self.dotflow2_functions_map]  # add $ prefix to each .flow instruction
             instructions_list = ", ".join(f_list)
-            response = "Supported .Flow v2 instructions:\n" + instructions_list
+            response = "Supported .Flow v2 instructions:\n" + instructions_list  #@TODO channels expect MD, not plain text. remove that \n
 
         elif command == 'reset all':
             self.session.reset_all(self.user_id)
             response = "All user session data erased."
+
+        elif command == 'variables':
+            vars = self.session.get_var(self.user_id)
+            response = "\nList of variables:\n"
+            for v in vars:
+                response += v + ": " + vars[v] + "\n"
 
         return response
 

@@ -83,14 +83,14 @@ class DotFlow2CoreFunctions():
         :return:
         """
         try:
-            var_name = self.bot.resolve_arg(args[0], f_type)
+            var_name = self.bot.resolve_arg(args[0], f_type, True)
         except IndexError:
             raise BBotException({'code': 110, 'function': 'set', 'arg': 0, 'message': 'Variable name missing.'})
         if type(var_name) is not str:
             raise BBotException({'code': 111, 'function': 'set', 'arg': 0, 'message': 'Variable name should be a string.'})
 
         try:
-            var_value = self.bot.resolve_arg(args[1], f_type)
+            var_value = self.bot.resolve_arg(args[1], f_type, True)
         except IndexError:
             raise BBotException({'code': 112, 'function': 'set', 'arg': 1, 'message': 'Variable value missing.'})
 
@@ -105,7 +105,7 @@ class DotFlow2CoreFunctions():
         :return:
         """
         try:
-            var_name = self.bot.resolve_arg(args[0], f_type)
+            var_name = self.bot.resolve_arg(args[0], f_type, True)
         except IndexError:
             raise BBotException({'code': 120, 'function': 'get', 'arg': 0, 'message': 'Variable name missing.'})
         if type(var_name) is not str:
