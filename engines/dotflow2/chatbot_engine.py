@@ -392,10 +392,6 @@ class DotFlow2(ChatbotEngine):
         if func_name in self.dotflow2_functions_map:
             response = getattr(self.dotflow2_functions_map[func_name]['object'],
                                self.dotflow2_functions_map[func_name]['method'])(args, f_type)
-
-            if f_type == 'R':  # If functions are executed on responses object, add response to the output stream
-                if type(response) is dict:  # check if it is a BBot response object @TODO improve detection
-                    self.add_output(response)
         else:
             # @TODO for now we just send a warning to the log. We will make it an Exception later
             self.logger_df2.warning(

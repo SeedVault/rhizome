@@ -54,8 +54,9 @@ class DotFlow2ResponseOutput():
             msg_idx = 0
 
         msg = self.bot.resolve_arg(args[msg_idx], f_type, True)  # no need to resolve arg before this
-
-        return {'text': str(msg)}
+        bbot_response = {'text': str(msg)}
+        self.bot.add_output(bbot_response)
+        return bbot_response
 
     def df2_image(self, args, f_type):
         """
@@ -70,11 +71,9 @@ class DotFlow2ResponseOutput():
         except IndexError:
             raise BBotException({'code': 210, 'function': 'image', 'arg': 0, 'message': 'Image URL in arg 0 is missing.'})
 
-        return {
-                'image': {
-                    'url': image_url
-                }
-            }
+        bbot_response = {'image': {'url': image_url}}
+        self.bot.add_output(bbot_response)
+        return bbot_response
 
     def df2_video(self, args, f_type):
         """
@@ -89,11 +88,9 @@ class DotFlow2ResponseOutput():
         except IndexError:
             raise BBotException({'code': 220, 'function': 'video', 'arg': 0, 'message': 'Video URL in arg 0 is missing.'})
 
-        return {
-                'video': {
-                    'url': video_url
-                }
-            }
+        bbot_response = {'video': {'url': video_url}}
+        self.bot.add_output(bbot_response)
+        return bbot_response
 
     def df2_audio(self, args, f_type):
         """
@@ -108,11 +105,9 @@ class DotFlow2ResponseOutput():
         except IndexError:
             raise BBotException({'code': 230, 'function': 'audio', 'arg': 0, 'message': 'Audio URL in arg 0 is missing.'})
 
-        return {
-                'audio': {
-                    'url': audio_url
-                }
-            }
+        bbot_response = {'audio': {'url': audio_url}}
+        self.bot.add_output(bbot_response)
+        return bbot_response
 
     def df2_button(self, args, f_type):
         """
@@ -140,15 +135,14 @@ class DotFlow2ResponseOutput():
         if errors:
             raise BBotException(errors)
 
-        response = {
+        bbot_response = {
                 'button': {
                     'id': button_id,
                     'text': text
                 }
             }
         if postback:
-            response['button']['postback'] = postback
+            bbot_response['button']['postback'] = postback
 
-        return response
-
-
+        self.bot.add_output(bbot_response)
+        return bbot_response

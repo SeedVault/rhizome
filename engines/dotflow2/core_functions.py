@@ -126,9 +126,6 @@ class DotFlow2CoreFunctions():
 
     def df2_code(self, args, f_type):
         """
-        !!!!WARNING!!!! THIS FUNCTION RUNS UNRESTRICTED PYTHON CODE. DON'T EXPOSE IT TO PUBLIC ACCESS!!
-        @TODO this will be replaced by Templator template
-
         This function is used to run any python code on conditions and responses objects.
         Of course you can use DotFlow2 functions inside it
         :param args:    0: string with python code
@@ -141,23 +138,54 @@ class DotFlow2CoreFunctions():
             raise BBotException({'code': 130, 'function': 'code', 'arg': 0, 'message': 'Code missing.'})
 
         if type(code) is not str:
-             raise BBotException({'code': 131, 'function': 'code', 'arg': 0, 'message': 'Argument 0 should be string'})
-
-        # Transpile $code code into Python code ready to run in DotFlow2 environment
-        for f in self.bot.dotflow2_functions_map:
-            # shortcut: no need to prefix "self.bot.df2." on all Dotflow2 functions
-            code = code.replace(f + '(', 'self.bot.df2.' + f + '(')
+            raise BBotException({'code': 131, 'function': 'code', 'arg': 0, 'message': 'Argument 0 should be string'})
 
         self.logger.debug('$code: Running python code: "' + code + "'...")
-        result = None
-        if f_type == 'C':           # If it's called from Condition object we need a result from the expression
-            result = eval(code)
-        elif f_type == 'R':         # If it's called from Responses object we need to freely run the code. No expression returned
-            exec(code)
 
-        self.logger.debug('$code: Returning: ' + str(result))
+        codeblock = self._get_codeblock(code, f_type)
+        self.logger.debug('$code: Running template code block: "' + codeblock + "'...")
+        response = self.bot.template_engine.render(codeblock)
+        response = self._get_boolean(response, f_type)
+        self.logger.debug('$code: Returning: ' + str(response))
+        return response
 
-        return result
+    def _get_codeblock(self, code: str, f_type: str):
+        """
+        Returns Templator codeblock from regular python code which will run the code and show its output
+
+        :param code: Python code
+        :param f_type:
+        :return: Templator codeblock
+        """
+        if f_type == 'C':  # injecting code to get result from the expression
+            code = 'resolved_expression = ' + code
+
+        # convert python code into Templator code block
+        code_block = '$code:'
+        code_block += '\t'.join(('\n' + code.lstrip()).splitlines(True))
+
+        if f_type == 'C':  # injecting code to get result from the expression
+            code_block += '\n$resolved_expression\n'
+        return code_block
+
+    def _get_boolean(self, response: str, f_type: str):
+        """
+        Detects boolean response from Templator and converts it to proper python boolean type.
+        Templator as any template engine will return a string si we need to convert it.
+
+        :param response:
+        :return:
+        """
+
+        if f_type == 'C':
+            if response == 'True':
+                response = True
+            elif response == 'False' or response == 'None':
+                response = False
+            else:
+                self.logger.warning('Error in condition. It is not returning a boolean')
+                response = False
+        return response
 
     #
     # Comparators
