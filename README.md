@@ -60,8 +60,7 @@ Note: you will get an error message "No matching distribution found for web-py==
 This is an expected result when having installed pip version older than 19.0 (which is not released at the time of writing this)\
 For more information see https://github.com/pypa/pip/issues/5870
 
-\
-Note for developers: If you need to add more packages remember to delete the entry for web-py in Pipfile before committing the code.
+Note for contributors: remember to delete the entry for web-py in Pipfile before committing the code.
 
 4) (Optional) Install service dependencies (MongoDB & ChatScript Server):
 
