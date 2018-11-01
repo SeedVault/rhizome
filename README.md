@@ -53,7 +53,14 @@ pipenv shell
 
 ```
 pipenv install --dev
+pipenv install web.py==0.40.dev1
 ```
+
+Note: you will get an error message "No matching distribution found for web-py==0.40.dev1". You can ignore this.\
+This is an expected result when having installed pip version older than 19.0 (which is not released at the time of writing this)\
+For more information see https://github.com/pypa/pip/pull/5875\
+\
+**Note for developers: If you need to add more packages remember to delete the entry for web-py in Pipfile before committing the code.**
 
 4) (Optional) Install service dependencies (MongoDB & ChatScript Server):
 
