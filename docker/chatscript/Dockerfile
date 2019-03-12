@@ -7,7 +7,7 @@ RUN apt-get update \
 && apt-get remove --purge \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* \
-&& wget https://github.com/bwilcox-1234/ChatScript/archive/master.zip \
+&& wget https://github.com/ChatScript/ChatScript/archive/master.zip \
 && unzip master.zip ChatScript-master/BINARIES/LinuxChatScript64 -d /opt \
 && unzip master.zip ChatScript-master/DICT/* -d /opt \
 && unzip master.zip ChatScript-master/RAWDATA/* -d /opt \
