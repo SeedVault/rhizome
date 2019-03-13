@@ -27,73 +27,20 @@ local machine for development and testing purposes.
 
 ### Prerequisites
 
-* Python 3.7 or newer
-* [Pipenv](http://www.dropwizard.io/1.0.2/docs/)
-* [Graphviz](https://www.graphviz.org) (optional)
-* [MongoDB](https://www.mongodb.com/) & [ChatScript](https://github.com/bwilcox-1234/ChatScript) server ...
-* ... or [docker-compose](https://docs.docker.com/compose/)
+* Python 3.7+ and pipenv
+* Docker
 
 
-### Installation steps
-
-1) Clone project repository:
+### Build
 
 ```
-git clone https://github.com/SeedVault/rhizome.git
-```
-
-2) Use pipenv to create a virtual environment:
-
-```
-cd rhizome
 pipenv shell
-```
-
-3) Install all the dependencies, including the development packages:
-
-```
-pipenv install --dev
-pipenv install web.py==0.40.dev1
-```
-
-Note: you will get an error message "No matching distribution found for web-py==0.40.dev1". You can ignore this.\
-This is an expected result when having installed pip version older than 19.0 (which is not released at the time of writing this)\
-For more information see https://github.com/pypa/pip/issues/5870
-
-Note for contributors: remember to delete the entry for web-py in Pipfile before committing the code.
-
-4) (Optional) Install service dependencies (MongoDB & ChatScript Server):
-
-```
+./build.sh
 cd docker
-docker-compose pull
-docker-compose build
 docker-compose up -d
-cd ..
+docker exec -it docker_mongo_1 bash /seed/seedmongo.sh rhizomedb
 ```
 
-5) Create folder **instance** and copy configuration files:
-
-```
-mkdir instance
-cp ./instance_examples/.env_development_example ./instance/.env_development
-cp ./instance_examples/.env_testing_example ./instance/.env_testing
-cp ./instance_examples/config_development_example.yml ./instance/config_development.yml
-cp ./instance_examples/config_testing_example.yml ./instance/config_testing.yml
-```
-
-6) Edit files **./instance/.env_development** and **./instance/.env_testing**
-to change configuration settings.
-
-
-7) Seed database in the container
-
-This will seed the database with a demo bot.
-If you are not using the container you can find the extended json files in /docker/seed folder.
-
-```
-docker exec -it docker_mongo_1 bash /seed/seedmongo.sh <databasename>
-```
 ## Running console channel
 
 ```
