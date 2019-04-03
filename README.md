@@ -39,6 +39,7 @@ pipenv shell
 cd docker
 docker-compose up -d
 docker exec -it docker_mongo_1 bash /seed/seedmongo.sh rhizomedb
+cd ..
 ```
 
 ## Running console channel
