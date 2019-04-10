@@ -36,10 +36,7 @@ local machine for development and testing purposes.
 ```
 pipenv shell
 ./build.sh
-cd docker
-docker-compose up -d
-docker exec -it docker_mongo_1 bash /seed/seedmongo.sh rhizomedb
-cd ..
+cd docker && docker exec -it docker_mongo_1 bash /seed/seedmongo.sh rhizomedb && cd ..
 ```
 
 ## Running console channel
@@ -57,6 +54,15 @@ Try the included demo bot with:
 ```
 BBOT_ENV=development python -m channels.console.app joe testbot 1 debug
 ```
+
+## Running Rhizome for the Authors' Tool
+
+```
+BBOT_ENV=development gunicorn "dot_repository.api:app" -b localhost:8000 --reload
+```
+
+Boot up the Authors' Tool and login with username `test`, password `test`.
+
 
 ## Running a RESTful web server and a simple chatbot web widget (plain text only)
 
