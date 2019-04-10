@@ -19,6 +19,14 @@ trap 'error_report $LINENO' ERR
 cd docker
 docker-compose pull
 docker-compose build
+# Compose up occasionally gets stuck on waiting for resource, so retry
+n=0
+until [ $n -ge 5 ]
+do
+    docker-compose up -d && break
+    n=$[$n+1]
+    sleep 5
+done
 cd ..
 mkdir instance
 cp ./instance_examples/.env_development_example ./instance/.env_development
