@@ -1,0 +1,1 @@
+{"_id":{"$oid":"5cac853e50283c00060d04bf"},"username":"test","hashed_password":"$2a$12$02SVCegQdjA0.dieFfYXYe.7BYh0pGX1kTwIX8LRiFABlWv0i83rm","is_admin":1,"organization_id":"5bbbd3f3e2e2900cd6a28616","token":"4168f608b0b5c4f101ef9ccbba6d7263af6891e685886eab","updated_at":{"$date":"2019-04-09T11:47:42.379Z"}}
