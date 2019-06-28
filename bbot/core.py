@@ -1,11 +1,13 @@
 """Define a plugin architecture to create bots."""
 from __future__ import annotations # see https://www.python.org/dev/peps/pep-0563/
 import abc
+import os
 import importlib
 import logging
 import logging.config
 import smokesignal
 from logging.config import DictConfigurator
+from bbot.config import load_configuration
 
 from typing import Any
 
@@ -142,13 +144,15 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
             fbbs = bot.dotbot.get('fallbackBots', [])
             for bot_name in fbbs:
                 self.logger_core.debug(f'Trying with bot {bot_name}')
-                bot_dotbot_container = bot.dotdb.find_dotbot_by_name(bot_name)
+                bot_dotbot_container = bot.dotdb.find_dotbot_by_idname(bot_name)
                 if not bot_dotbot_container:
                     raise Exception(f'Fallback bot not found {bot_name}')
                 else:
                     bot_dotbot = bot_dotbot_container.dotbot
 
-                bbot = create_bot(bot.config, bot_dotbot)
+                config_path = os.path.abspath(os.path.dirname(__file__) + "/../instance")
+                config = load_configuration(config_path, "BBOT_ENV")
+                bbot = create_bot(config, bot_dotbot)
                 bbot.is_fallback = True
                 req = ChatbotEngine.create_request(bot.request['input'], bot.user_id, 1, 1)
                 fallback_response = bbot.get_response(req)
@@ -163,6 +167,16 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
             else:
                 self.logger_core.debug('No fallback defined for this bot. Sending original main bot response if any')
         return response
+
+    def get_all_texts_from_output(bbot_response: dict) -> str:
+        """Returns all concatenated texts from a bbot response"""
+        texts = ''
+
+        for r in bbot_response:
+            response_type = list(r.keys())[0]
+            if response_type == 'text':
+                texts += r['text'] + '.\n' # @TODO improve this
+        return texts
 
 
 class ChatbotEngineNotFoundError(Exception):
@@ -274,6 +288,7 @@ def create_bot(config: dict, dotbot: dict={}) -> ChatbotEngine:
     :return: Instance of a subclass of ChatbotEngine.
     """
     chatbot_engine = dotbot['chatbotEngine']
+    
     if chatbot_engine not in config["bbot"]["chatbot_engines"]:
         raise ChatbotEngineNotFoundError()
 

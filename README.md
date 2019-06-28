@@ -55,15 +55,6 @@ Try the included demo bot with:
 BBOT_ENV=development python -m channels.console.app joe testbot 1 debug
 ```
 
-## Running Rhizome for the Authors' Tool
-
-```
-BBOT_ENV=development gunicorn "dot_repository.api:app" -b localhost:8000 --reload
-```
-
-Boot up the Authors' Tool and login with username `test`, password `test`.
-
-
 ## Running a RESTful web server and a simple chatbot web widget (plain text only)
 
 ```

@@ -1,4 +1,4 @@
-version: '3'
+version: '3.7'
 
 networks:
     botanic_lan:
@@ -17,7 +17,7 @@ services:
         networks:
             - botanic_lan
         ports:
-            - 1024:1024
+            - 1025:1025
         tty: true
         volumes:
             - ./volumes/opt/ChatScript-master/LOGS:/opt/ChatScript-master/LOGS
