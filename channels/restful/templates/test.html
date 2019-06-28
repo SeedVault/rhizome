@@ -192,7 +192,7 @@
             <form>
               <div class="form-group">
                 <label for="url" class="col-form-label">REST endpoint:</label>
-                <input type="text" class="form-control" id="url" name="url" value="http://localhost:5000/Channels/RESTfulWebService">
+                <input type="text" class="form-control" id="url" name="url" value="http://localhost:5000/restful_channel">
               </div>
               <div class="form-group">
                 <label for="bot_id" class="col-form-label">Bot ID:</label>
@@ -303,7 +303,7 @@
               console.log(response);
               console.log("-".repeat(80));
               if (data.output.length) {
-                botResponse = data.output[0].text.join("\n")
+                botResponse = data.output[0].text
                 setTimeout("showBotResponse()", 500 + Math.floor((botResponse.length * 10) + 1));
               }
             }

@@ -39,10 +39,10 @@ def create_app():
             
             # if 'runBot' in params:
             #    run_bot = restful.params['runBot']
-            dotbotContainer = restful.dotdb.find_dotbot_by_container_id(bot_id)
-            restful.dotbot = dotbotContainer.dotbot # needed for methods below
+            dotbotContainer = restful.dotdb.find_dotbot_by_container_id(bot_id)            
             if not dotbotContainer:
                 raise Exception('Bot not found')
+            restful.dotbot = dotbotContainer.dotbot # needed for methods below
             bot = create_bot(config, dotbotContainer.dotbot)
             input_text = ""
             #for input_type, input_value in input_params.items():
