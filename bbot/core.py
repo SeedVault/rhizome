@@ -132,6 +132,7 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
         @TODO this will be called from a pubsub event, so args might change
         Call to fallback bots defined in dotbot when the main bot has a no match o
         or when it doesnt answer or has an invalid response
+        @TODO this might be replaced by a conditional pipeline
 
         :param bot:
         :param response:

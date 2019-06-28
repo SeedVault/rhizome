@@ -63,6 +63,8 @@ def create_app():
 
         except Exception as e:
             response = {'error': {'message': str(e)}}
+            #@TODO add config to enable/disable show exception errors on chatbot output
+            #@TODO the whole error handling needs to be refactored. logs/exceptions/response object
 
         logger.debug("Response: " + str(response))
         return json.dumps(response)

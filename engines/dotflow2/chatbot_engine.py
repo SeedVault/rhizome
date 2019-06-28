@@ -16,7 +16,7 @@ class DotFlow2(ChatbotEngine):
 
         :param config: Configuration values for the instance.
         """
-        super().__init__(config, dict)
+        super().__init__(config, dotbot)
 
         # internal dotflow2 variables
         self.config = config
