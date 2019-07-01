@@ -56,12 +56,13 @@ def create_app():
             for br in bot_response.keys():
                 response[br] = bot_response[br]
 
-            # html escape (@TODO change this when enabling bbot response textMD and textHTML)
-            response['output'] = restful.escape_html_from_text(response['output'])
-            logger.debug('Escaped response text: ' + str(response['output']))
-
+            if (restful.dotbot.get('defaultOutputContentType') == 'plain/text'):                
+                response['output'] = restful.escape_html_from_text(response['output'])
+                logger.debug('Escaped response text: ' + str(response['output']))
+            
 
         except Exception as e:
+            logger.critical(str(e) + "\n" + str(traceback.format_exc()))            
             response = {'error': {'message': str(e)}}
             #@TODO add config to enable/disable show exception errors on chatbot output
             #@TODO the whole error handling needs to be refactored. logs/exceptions/response object
