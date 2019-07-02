@@ -83,7 +83,7 @@ class ChatScript(ChatbotEngine):
         self.logger_cs.debug("Chatscript response BBOT format: " + str(bbot_response))
 
         bbot_response = self.fallback_bot(self, bbot_response) # @TODO this might be called from a different place
-        return {'output': [bbot_response]}
+        return bbot_response
 
     @staticmethod
     def to_bbot_response(response: str) -> dict:
@@ -93,11 +93,16 @@ class ChatScript(ChatbotEngine):
         :return: BBOT response specification dict
         """
         # split response and oob
-        response, oob = ChatScript.split_response(response)
+        #response, oob = ChatScript.split_response(response)
 
-        bbot_response = {'text': response}
-        bbot_response = {**bbot_response, **oob}
-        return bbot_response
+        bbot_response = []
+
+        response_split = response.split('\\n')
+        for rs in response_split:
+            bbot_response.append({'text': rs})
+
+        #bbot_response = {**bbot_response, **oob}
+        return {'output': bbot_response}
 
     @staticmethod
     def split_response(response: str) -> tuple:

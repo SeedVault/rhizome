@@ -51,14 +51,15 @@ def create_app():
             #    input_text = input_text + input_value
             req = ChatbotEngine.create_request(input_params, user_id, bot_id, org_id)
             bot_response = bot.get_response(req)
+            logger.info("Response from bot engine:", bot_response)
 
             response = defaultdict(lambda: defaultdict(dict))    # create a response dict with autodict property
             for br in bot_response.keys():
                 response[br] = bot_response[br]
-
-            if (restful.dotbot.get('defaultOutputContentType') == 'plain/text'):                
-                response['output'] = restful.escape_html_from_text(response['output'])
-                logger.debug('Escaped response text: ' + str(response['output']))
+            
+            #response['output'] = restful.escape_html_from_text(response['output'])
+            #logger.debug('Escaped response text: ' + str(response['output']))
+            
             
 
         except Exception as e:
