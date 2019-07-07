@@ -9,7 +9,7 @@ import logging.config
 from flask_cors import CORS, cross_origin
 from flask import Flask, request, render_template
 from collections import defaultdict
-from bbot.core import create_bot, ChatbotEngine, Plugin
+from bbot.core import BBotCore, ChatbotEngine, Plugin
 from bbot.config import load_configuration
 
 
@@ -43,13 +43,13 @@ def create_app():
             if not dotbotContainer:
                 raise Exception('Bot not found')
             restful.dotbot = dotbotContainer.dotbot # needed for methods below
-            bot = create_bot(config, dotbotContainer.dotbot)
+            bot = BBotCore.create_bot(config, dotbotContainer.dotbot)
             input_text = ""
             #for input_type, input_value in input_params.items():
                 # bot.get_response(input_type, input_value)
             #    _ = input_type
             #    input_text = input_text + input_value
-            req = ChatbotEngine.create_request(input_params, user_id, bot_id, org_id)
+            req = bot.create_request(input_params, user_id, bot_id, org_id)
             bot_response = bot.get_response(req)
             logger.info("Response from bot engine:", bot_response)
 

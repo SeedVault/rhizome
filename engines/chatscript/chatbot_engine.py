@@ -4,7 +4,7 @@ import logging
 import traceback
 import re
 import json
-from bbot.core import ChatbotEngine, ChatbotEngineError
+from bbot.core import BBotCore, ChatbotEngine, ChatbotEngineError
 
 
 class ChatScript(ChatbotEngine):
@@ -16,13 +16,16 @@ class ChatScript(ChatbotEngine):
 
         :param config: Configuration values for the instance.
         """
-        super().__init__(config, dotbot)
 
         self.config = config
         self.dotbot = dotbot
+        self.extensions = []
 
         self.logger_level = ''          # Logging level for the module
         self.logger_cs = logging.getLogger("chatscript")
+
+    def init(self, core):
+        pass
 
     def get_response(self, request: dict) -> dict:
         """
@@ -59,7 +62,7 @@ class ChatScript(ChatbotEngine):
                     break
                 msg = msg + chunk.decode("utf-8")
             connection.close()
-            response = self.create_response(msg)
+            response = BBotCore.create_response(msg)
 
         except Exception as e:
             self.logger_cs.critical(str(e) + "\n" + str(traceback.format_exc()))
@@ -82,7 +85,6 @@ class ChatScript(ChatbotEngine):
 
         self.logger_cs.debug("Chatscript response BBOT format: " + str(bbot_response))
 
-        bbot_response = self.fallback_bot(self, bbot_response) # @TODO this might be called from a different place
         return bbot_response
 
     @staticmethod

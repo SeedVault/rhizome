@@ -19,6 +19,7 @@ gunicorn = "*"
 smokesignal = "*"
 "jinja2" = "*"
 flask-cors = "*"
+pydispatcher = "*"
 
 [dev-packages]
 pytest = "*"

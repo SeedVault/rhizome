@@ -49,7 +49,7 @@ class DotFlow2(ChatbotEngine):
         self.executed_functions = []
         self.logger_df2 = None
 
-    def init_engine(self):
+    def init(self):
         """
         Init environment for the engine.
         All init that can't be done in __init__ because plugins are not fully loaded yet
@@ -58,13 +58,13 @@ class DotFlow2(ChatbotEngine):
         """
         self.logger_df2 = DotFlow2LoggerAdapter(logging.getLogger('dotflow2'), self, self)
 
-        self.template_engine.init(self)
+        #self.template_engine.init(self)
 
-        if self.extensions:
+        """if self.extensions:
             for p in self.extensions:
                 #self.logger_df2.debug('Initializing extension ' + str(p))
                 self.extensions[p].init(self)
-
+        """
     def reset_response(self):
         """
         This initializes variables on each volley

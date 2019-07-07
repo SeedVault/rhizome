@@ -5,7 +5,7 @@ import os
 import importlib
 import logging
 import logging.config
-import smokesignal
+from pydispatch import dispatcher
 from logging.config import DictConfigurator
 from bbot.config import load_configuration
 
@@ -24,7 +24,7 @@ class Plugin(metaclass=abc.ABCMeta):
 
 
     @staticmethod
-    def load_plugin(plugin_settings: dict, dotbot: dict=None) -> Any:
+    def load_plugin(plugin_settings: dict, dotbot: dict=None, parent: object=None) -> Any:
         """
         Create a new instance of a plugin dynamically.
 
@@ -41,14 +41,17 @@ class Plugin(metaclass=abc.ABCMeta):
                 if not isinstance(attr_config, dict): # single value
                     plugin.__setattr__(attr_name, attr_config)
                 elif  "plugin_class" in attr_config:  # single instance
-                    plugin.__setattr__(attr_name, Plugin.load_plugin(attr_config))
+                    plugin.__setattr__(attr_name, Plugin.load_plugin(attr_config, dotbot, plugin))
                 else: # many instances
                     instances = {}
                     for key, values in attr_config.items():
                         if "plugin_class" in values:
-                            instances[key] = Plugin.load_plugin(values)
+                            instances[key] = Plugin.load_plugin(values, dotbot, plugin)
 
                     plugin.__setattr__(attr_name, instances)
+        #@TODO we might change this to run directly on _init_ with a callback
+        if hasattr(plugin, 'init'):
+            plugin.init(parent)
         return plugin
 
     @staticmethod
@@ -68,30 +71,54 @@ class Plugin(metaclass=abc.ABCMeta):
 
 
 @Plugin.register
-class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
+class BBotCore(Plugin, metaclass=abc.ABCMeta):
     """Abstract base class for chatbot engines."""
 
-    @abc.abstractmethod
+    SIGNAL_GET_RESPONSE_AFTER = 'get_response_after'
+    SENDER_CHATBOT_ENGINE = 'chatbot_engine'
+
     def __init__(self, config: dict, dotbot: dict) -> None:
         """
         Initialize the chatbot engine.
 
         :param config: Configuration values for the instance.
         """
-        super(ChatbotEngine, self).__init__(config)
+        #super(ChatbotEngine, self).__init__(config)
+
+        self.config = config
+        self.dotbot = dotbot
 
         self.dotdb = None
-        self.config = {}
-        self.dotbot = None
         self.logger = None
         self.is_fallback = False
+        self.extensions = []
 
         self.user_id = ''
         self.bot_id = ''
         self.org_id = ''
         self.request = {}
 
-    @abc.abstractmethod
+
+        
+
+    def init(self, none):
+        """
+        Initilize BBot core. Load and init chatbot engine
+        """
+
+        # Init core
+        #self.extensions[0].init(self)      
+       
+
+        # Instatiate chatbot engine and initialize
+        config_path = os.path.abspath(os.path.dirname(__file__) + "/../instance")
+        config = load_configuration(config_path, "BBOT_ENV")
+        self.bot = Plugin.load_plugin(config["chatbot_engines"][self.dotbot['chatbotEngine']], self.dotbot, self)
+        #logging.config.dictConfig(config['logging'])
+        #bot.logging_config = config['logging']
+               
+        #self.bot.init()
+
     def get_response(self, request: dict) -> dict:
         """
         Return a response based on the input data.
@@ -99,7 +126,38 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
         :param request: A dictionary with input data.
         :return: A response to the input data.
         """
-        return request
+
+        bbot_response = self.bot.get_response(request)
+        
+        bbot_response = self.fallback_bot(self, bbot_response)
+        dispatcher.send(signal = BBotCore.SIGNAL_GET_RESPONSE_AFTER, sender = BBotCore.SENDER_CHATBOT_ENGINE, message = [self, bbot_response])
+
+        return bbot_response
+
+    @staticmethod
+    def create_bot(config: dict, dotbot: dict={}):
+        """
+        Create a bot.
+
+        :param config: Configuration settings.
+        :param chatbot_engine_name: Name of engine to create. If ommited,
+                            defaults to value specified under the key
+                            "bbot.default_chatbot_engine" in configuration file.
+        :return: Instance of BBotCore class.
+        """
+        chatbot_engine = dotbot['chatbotEngine']
+        
+        if chatbot_engine not in config["chatbot_engines"]:
+            raise ChatbotEngineNotFoundError()
+
+        core = Plugin.load_plugin(config["bbot_core"], dotbot)
+        logging.config.dictConfig(config['logging'])
+        core.logging_config = config['logging']
+
+        #bot.logger_core = BBotLoggerAdapter(logging.getLogger('bbot'), bot, bot)
+        
+        return core
+
 
 
     @staticmethod
@@ -179,6 +237,31 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
                 texts += r['text'] + '.\n' # @TODO improve this
         return texts
 
+
+@Plugin.register
+class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
+    """Abstract base class for chatbot engines."""
+
+    @abc.abstractmethod
+    def __init__(self, config: dict) -> None:
+        """
+        Initialize the instance.
+
+        :param config: Configuration values for the instance.
+        """
+        super(ChatbotEngine, self).__init__(config)
+
+    @abc.abstractmethod
+    def get_response(self, request: dict) -> dict:
+        """
+        Get response based on the request
+        """
+
+    @abc.abstractmethod
+    def init(self) -> None:
+        """
+        Initializes chatbot engine with config and dotbot loaded
+        """
 
 class ChatbotEngineNotFoundError(Exception):
     """ChatbotEngine not found."""
@@ -277,30 +360,6 @@ class Cache(Plugin, metaclass=abc.ABCMeta):
         """
         return ""
 
-
-def create_bot(config: dict, dotbot: dict={}) -> ChatbotEngine:
-    """
-    Create a bot.
-
-    :param config: Configuration settings.
-    :param chatbot_engine_name: Name of engine to create. If ommited,
-                        defaults to value specified under the key
-                        "bbot.default_chatbot_engine" in configuration file.
-    :return: Instance of a subclass of ChatbotEngine.
-    """
-    chatbot_engine = dotbot['chatbotEngine']
-    
-    if chatbot_engine not in config["bbot"]["chatbot_engines"]:
-        raise ChatbotEngineNotFoundError()
-
-    bot = Plugin.load_plugin(config["bbot"]["chatbot_engines"][chatbot_engine], dotbot)
-    logging.config.dictConfig(config['logging'])
-    bot.logging_config = config['logging']
-
-    bot.logger_core = BBotLoggerAdapter(logging.getLogger('bbot'), bot, bot)
-    if hasattr(bot, 'init_engine'):
-        bot.init_engine()
-    return bot
 
 
 class BBotLoggerAdapter(logging.LoggerAdapter):
