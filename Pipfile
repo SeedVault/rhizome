@@ -20,6 +20,7 @@ smokesignal = "*"
 "jinja2" = "*"
 flask-cors = "*"
 pydispatcher = "*"
+boto3 = "*"
 
 [dev-packages]
 pytest = "*"

@@ -60,7 +60,15 @@ def create_app():
             #response['output'] = restful.escape_html_from_text(response['output'])
             #logger.debug('Escaped response text: ' + str(response['output']))
             
-            
+            if restful.params.get('ttsEnabled', None):          
+                if not restful.tts:
+                    response['errors'].append({'message': 'No TTS engine configured for this bot.'})                      
+                else:
+                    #retrieve TTS audio generated from all texts from bbot output                    
+                    restful.tts.voice_locale = get_locale()
+                    restful.tts.voice_id = get_tts_voice_id()
+                    all_texts = BBotCore.get_all_texts_from_output(response['output'])                
+                    response['tts']['url'] = restful.tts.get_speech_audio_url(all_texts, restful.params.get('ttsTimeScale', 100))           
 
         except Exception as e:
             logger.critical(str(e) + "\n" + str(traceback.format_exc()))            
@@ -71,9 +79,41 @@ def create_app():
         logger.debug("Response: " + str(response))
         return json.dumps(response)
 
+    def get_locale() -> str:
+        """Returns locale for tts service. It first check on params if no value provided it fallsback to http header."""
+        dotbot_lc = restful.dotbot.get('enabledLocales', [])
+        
+        # get current locale
+        param_lc = restful.params.get('locale', None) 
+        curr_lc = None
+        if param_lc:
+            if param_lc in dotbot_lc:
+                curr_lc = param_lc  # we got locale based on client choice
+        else:  
+            # check http header locale to see if it's enabled by the bot
+            # @TODO
+            curr_lc = None
+
+        if not curr_lc:
+            #client locale is not enabled by the bot. check if there is any language available for it anyway
+            #@TODO
+
+            curr_lc = restful.dotbot.get('defaultLocale', 'en_US')
+
+        return curr_lc
+
+    def get_tts_voice_id() -> str:
+        """Returns bbot voice id. First check on params. Default value is 1"""
+        return restful.dotbot.get('ttsVoiceId', None) or restful.params.get('ttsVoiceId', None) or '0'
+
+    def get_http_locale() -> str:
+        """ @TODO """
+        return None
+
+
     @app.route('/TestWebChatBot')
     def test():                                     # pylint: disable=W0612
         return render_template('test.html')
 
-
     return app
+

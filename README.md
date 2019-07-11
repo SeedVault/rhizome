@@ -9,14 +9,15 @@ See [the Wiki](https://github.com/SeedVault/SEEDtoken-IP/wiki) for more informat
 
 ## Features
 - Support .Bot v1.1 (see https://github.com/SeedVault/bot)
-- Support .Flow v1.0 with flow extensions support for Text, Buttons, Media cards, Forms, Send email, Variable storing and comparisson operators.
+- Support .Flow v1.0
 - Support .Flow v2.0 with basic functionality (see https://github.com/SeedVault/flow)
-- Template engine support for text output compatible with Jinja2.
+- Template engine support for text output compatible with Templetor.
 
 ## To-do
 
-- Support .Flow v2.0 full specification.
-- Add extensions to support all .Flow v2.0 functions, filters and operators.
+- Add support for .Flow v2.0 full specification.
+- Add .Flow instructions to support AIML and ChatScript compiler.
+- Add extensions to support all .Flow v2.0 instructions, functions, filters and operators.
 - Add channels Skype, Slack, Facebook, Signal, Kik and Twitter.
 - Add commands for bot developer and channels to control bot flow and session.
 
@@ -30,13 +31,18 @@ local machine for development and testing purposes.
 * Python 3.7+ and pipenv
 * Docker
 
-
 ### Build
 
 ```
 pipenv shell
 ./build.sh
 cd docker && docker exec -it docker_mongo_1 bash /seed/seedmongo.sh rhizomedb && cd ..
+```
+
+Note: If you have issues with `pipenv install` try this:
+```
+pip install --upgrade pip
+pip install git+https://github.com/pypa/pipenv.git
 ```
 
 ## Running console channel

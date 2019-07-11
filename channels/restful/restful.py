@@ -10,6 +10,7 @@ class Restful:
         self.config = config
         self.dotbot = dotbot
         self.dotdb = None  #
+        self.tts = None
         
         self.params = {}
 

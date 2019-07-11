@@ -7,94 +7,99 @@
 #
 
 environment: development
-bbot:
+bbot_core:
+    plugin_class: bbot.core.BBotCore
     config_path: <%= ENV['BBOT_CONFIG_PATH'] %>
-    chatbot_engines:
-        dotflow2:
-            plugin_class: engines.dotflow2.chatbot_engine.DotFlow2
+    extensions:
+        seed_token_register:
+            plugin_class: bbot.extensions.seed_token_register.SeedTokenRegister                
+            mongodb_uri: <%= ENV['SEED_DEMO_MONGODB_URI'] %>
+chatbot_engines:
+    dotflow2:
+        plugin_class: engines.dotflow2.chatbot_engine.DotFlow2
+        logger_level: DEBUG
+        template_engine:
+            plugin_class: bbot.template_templetor.PluginTemplateEngine
             logger_level: DEBUG
-            session:
-                plugin_class: engines.dotflow2.session_mongodb.SessionMongoDB
-                uri: <%= ENV['MONGODB_URI'] %>
-            cache:
-                plugin_class: bbot.cache_classvar.CacheClassvar
-            dotdb:
-                plugin_class: dot_repository.mongodb.DotRepository
-                uri: <%= ENV['MONGODB_URI'] %>
-            template_engine:
-                plugin_class: engines.dotflow2.extensions.template_templetor.PluginTemplateEngine
+        session:
+            plugin_class: engines.dotflow2.session_mongodb.SessionMongoDB
+            uri: <%= ENV['MONGODB_URI'] %>
+        cache:
+            plugin_class: bbot.cache_classvar.CacheClassvar
+        dotdb:
+            plugin_class: dot_repository.mongodb.DotRepository
+            uri: <%= ENV['MONGODB_URI'] %>
+        extensions:
+            core:
+                plugin_class: engines.dotflow2.core_functions.DotFlow2CoreFunctions
                 logger_level: DEBUG
-            extensions:
-                core:
-                    plugin_class: engines.dotflow2.core_functions.DotFlow2CoreFunctions
-                    logger_level: DEBUG
-                response_output:
-                    plugin_class: engines.dotflow2.extensions.response_output.DotFlow2ResponseOutput
-                    logger_level: DEBUG
-                chatscript_match:
-                    plugin_class: engines.dotflow2.extensions.chatscript_match.DotFlow2ChatScriptMatch
-                    logger_level: DEBUG
-                    server_host: <%= ENV['CHATSCRIPT_SERVER_FLOWEXT_HOST'] %>
-                    server_port: <%= ENV['CHATSCRIPT_SERVER_FLOWEXT_PORT'] %>
-                    server_bot_id: <%= ENV['CHATSCRIPT_SERVER_FLOWEXT_BOT_ID'] %>
-                send_email:
-                    plugin_class: engines.dotflow2.extensions.send_email.DotFlow2SendEmail
-                    logger_level: DEBUG
-                mscs_sentiment_analysis:
-                    plugin_class: engines.dotflow2.extensions.mscs_sentiment_analysis.DotFlow2MSCSSentimentAnalysis
-                    logger_level: DEBUG
-                    azure_location: <%= ENV['AZURE_LOCATION'] %>
-                    azure_subscription_key: <%= ENV['AZURE_SUBSCRIPION_KEY'] %>
-                weather_report:
-                    plugin_class: engines.dotflow2.extensions.weather_report.DotFlow2WeatherReport
-                    logger_level: DEBUG
-                    accuweather_api_key: <%= ENV['ACCUWEATHER_API_KEY'] %>
-        chatscript:
-            plugin_class: engines.chatscript.chatbot_engine.ChatScript
-            dotdb:
-                plugin_class: dot_repository.mongodb.DotRepository
-                uri: <%= ENV['MONGODB_URI'] %>
-        python:
-            plugin_class: engines.python.chatbot_engine.Python
-            dotdb:
-                plugin_class: dot_repository.mongodb.DotRepository
-                uri: <%= ENV['MONGODB_URI'] %>
-        flow:
-            plugin_class: engines.flow.chatbot_engine.Flow
-            dotbot_reader:
-                plugin_class: bbot.json_file_reader.JsonFileReader
-                filename: <%= ENV['BBOT_CONFIG_PATH'] %>/flow_dotbot.json
-            nodes_reader:
-                plugin_class: bbot.http_request.HttpRequest
-                url: <%= ENV['DOTFLOW_URL'] %>
-            session:
-                plugin_class: flow.mongodb.MongoDB
-                uri: <%= ENV['MONGODB_URI'] %>
-            extensions: [
-                'flow.extensions.buttons.Buttons',
-                'flow.extensions.media.Media',
-                'flow.extensions.plain_text_eq_match.PlainTextEqMatch',
-                'flow.extensions.regex_match.RegexMatch',
-                'flow.extensions.chatscript_match.ChatscriptMatch',
-                'flow.extensions.send_email.SendEmail',
-                'flow.extensions.text.Text',
-                'flow.extensions.variable_eval.VariableEval',
-                'flow.extensions.weather.Weather',
-                'flow.extensions.sentiment_match.SentimentMatch',
-            ]
-            azure_location: <%= ENV['AZURE_LOCATION'] %>
-            azure_subscription_key: <%= ENV['AZURE_SUBSCRIPION_KEY'] %>
-            weather_api_key: <%= ENV['ACCUWEATHER_API_KEY'] %>
-            chatscript_flowext_host: <%= ENV['CHATSCRIPT_SERVER_FLOWEXT_HOST'] %>
-            chatscript_flowext_port: <%= ENV_UNQUOTED['CHATSCRIPT_SERVER_FLOWEXT_PORT'] %>
-            chatscript_flowext_bot_id: <%= ENV['CHATSCRIPT_SERVER_FLOWEXT_BOT_ID'] %>
-            template_engine:
-                plugin_class: bbot.template_engine_jinja2.TemplateEngineJinja2
-            cache:
-                plugin_class: bbot.cache_classvar.CacheClassvar
-
-            #    media:
-            #        plugin_class: flow.extensions.media.Media
+            response_output:
+                plugin_class: engines.dotflow2.extensions.response_output.DotFlow2ResponseOutput
+                logger_level: DEBUG
+            send_email:
+                plugin_class: bbot.extensions.send_email.SendEmail
+                logger_level: DEBUG
+            weather_report:
+                plugin_class: bbot.extensions.weather_report.WeatherReport
+                logger_level: DEBUG
+                accuweather_api_key: <%= ENV['ACCUWEATHER_API_KEY'] %>
+            chatscript_match:
+                plugin_class: engines.dotflow2.extensions.chatscript_match.DotFlow2ChatScriptMatch
+                logger_level: DEBUG
+                server_host: <%= ENV['CHATSCRIPT_SERVER_FLOWEXT_HOST'] %>
+                server_port: <%= ENV['CHATSCRIPT_SERVER_FLOWEXT_PORT'] %>
+                server_bot_id: <%= ENV['CHATSCRIPT_SERVER_FLOWEXT_BOT_ID'] %>
+            mscs_sentiment_analysis:
+                plugin_class: engines.dotflow2.extensions.mscs_sentiment_analysis.DotFlow2MSCSSentimentAnalysis
+                logger_level: DEBUG
+                azure_location: <%= ENV['AZURE_LOCATION'] %>
+                azure_subscription_key: <%= ENV['AZURE_SUBSCRIPION_KEY'] %>
+    chatscript:
+        plugin_class: engines.chatscript.chatbot_engine.ChatScript
+        dotdb:
+            plugin_class: dot_repository.mongodb.DotRepository
+            uri: <%= ENV['MONGODB_URI'] %>
+    python:
+        plugin_class: engines.python.chatbot_engine.Python
+        dotdb:
+            plugin_class: dot_repository.mongodb.DotRepository
+            uri: <%= ENV['MONGODB_URI'] %>    
+    flow:
+        plugin_class: engines.flow.chatbot_engine.Flow
+        dotbot_reader:
+            plugin_class: bbot.json_file_reader.JsonFileReader
+            filename: <%= ENV['BBOT_CONFIG_PATH'] %>/flow_dotbot.json
+        nodes_reader:
+            plugin_class: bbot.http_request.HttpRequest
+            url: <%= ENV['DOTFLOW_URL'] %>
+        session:
+            plugin_class: flow.mongodb.MongoDB
+            uri: <%= ENV['MONGODB_URI'] %>
+        extensions: [
+            'flow.extensions.buttons.Buttons',
+            'flow.extensions.media.Media',
+            'flow.extensions.plain_text_eq_match.PlainTextEqMatch',
+            'flow.extensions.regex_match.RegexMatch',
+            'flow.extensions.chatscript_match.ChatscriptMatch',
+            'flow.extensions.send_email.SendEmail',
+            'flow.extensions.text.Text',
+            'flow.extensions.variable_eval.VariableEval',
+            'flow.extensions.weather.Weather',
+            'flow.extensions.sentiment_match.SentimentMatch',                
+        ]
+        azure_location: <%= ENV['AZURE_LOCATION'] %>
+        azure_subscription_key: <%= ENV['AZURE_SUBSCRIPION_KEY'] %>
+        weather_api_key: <%= ENV['ACCUWEATHER_API_KEY'] %>                    
+        chatscript_flowext_host: <%= ENV['CHATSCRIPT_SERVER_FLOWEXT_HOST'] %>
+        chatscript_flowext_port: <%= ENV_UNQUOTED['CHATSCRIPT_SERVER_FLOWEXT_PORT'] %>
+        chatscript_flowext_bot_id: <%= ENV['CHATSCRIPT_SERVER_FLOWEXT_BOT_ID'] %>
+        template_engine:
+            plugin_class: bbot.template_engine_jinja2.TemplateEngineJinja2
+        cache:  
+            plugin_class: bbot.cache_classvar.CacheClassvar            
+        
+        #    media:
+        #        plugin_class: flow.extensions.media.Media
 
 
 # Dot Repository
@@ -102,7 +107,7 @@ dot_repository:
     plugin_class: dot_repository.mongodb.DotRepository
     uri: <%= ENV['MONGODB_URI'] %>
 
-# Telegram channel
+# Channels
 channel_telegram:
     plugin_class: channels.telegram.telegram.Telegram
     dotdb:
@@ -122,7 +127,14 @@ channel_restful:
     dotdb:
         plugin_class: dot_repository.mongodb.DotRepository
         uri: <%= ENV['MONGODB_URI'] %>
-
+    tts:
+        plugin_class: libs.tts_amazon_polly.TTSAmazonPolly
+        aws_access_key_id: <%= ENV['AWS_ACCESS_KEY_ID'] %>
+        aws_secret_access_key: <%= ENV['AWS_SECRET_ACCESS_KEY'] %>
+        aws_region_name: <%= ENV['AWS_REGION_NAME'] %>
+        cache_local_path: <%= ENV['AMAZON_POLLY_CACHE_LOCAL_PATH'] %>
+        cache_web_url: <%= ENV['AMAZON_POLLY_CACHE_WEB_URL'] %>
+            
 # Logging
 # See https://docs.python.org/3.7/library/logging.config.html#configuration-dictionary-schema
 logging:
@@ -158,10 +170,16 @@ logging:
             qualname: channel_telegram
             propagate: false
         channel_restful:
-            level: NOTSET
+            level: DEBUG
             handlers: [console]
             qualname: channel_restful
             propagate: false
+        tts:
+            level: NOTSET
+            handlers: [console]
+            qualname: tts
+            propagate: false
+
 
     handlers:
         console:
@@ -178,7 +196,8 @@ logging:
     formatters:
         simpleFormatter:
             class: logging.Formatter
-            format: '%(name)-20s %(asctime)s %(bot_name)s %(user_id)s %(levelname)-8s %(message)s'
+            #format: '%(name)-20s %(asctime)s %(bot_name)s %(user_id)s %(levelname)-8s %(message)s'
+            format: '%(name)-20s %(asctime)s %(levelname)-8s %(message)s'
             datefmt: '%d/%m/%Y %H:%M:%S'
 
 
