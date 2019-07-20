@@ -4,13 +4,13 @@ from bbot.core import Cache
 class CacheClassvar(Cache):
     """Cache."""
 
+    cache = {} # type: dict
+
     def __init__(self, config: dict, dotbot: dict) -> None:
         """
         Initialize the plugin.
 
         """
-        self.cache = {} # type: dict
-
         super().__init__(config)
 
 

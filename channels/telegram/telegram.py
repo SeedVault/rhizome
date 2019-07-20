@@ -63,6 +63,7 @@ class Telegram:
 
     def send_text(self, text: list):
         """
+        Sends text to telegram
         """
         text = text['text']
         if type(text) is str and text:
@@ -72,6 +73,7 @@ class Telegram:
 
     def send_image(self, image: dict):
         """
+        Sends image to telegram
         """
         image = image['image']
         caption = None
@@ -85,6 +87,7 @@ class Telegram:
         
     def send_video(self, video: dict):
         """
+        Sends video to telegram
         """
         video = video['video']
         caption = None
@@ -98,6 +101,7 @@ class Telegram:
 
     def send_audio(self, audio: dict):
         """
+        Sends audio to telegram
         """
         audio = audio['audio']
         caption = None
@@ -113,6 +117,7 @@ class Telegram:
 
     def send_buttons(self, buttons: dict):
         """
+        Sends buttons to telegram
         """
         buttons = buttons['buttons']
         from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton

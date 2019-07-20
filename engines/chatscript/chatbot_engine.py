@@ -20,6 +20,7 @@ class ChatScript(ChatbotEngine):
 
     def init(self, core):
         """
+        Initializebot engine 
         """
         self.logger = BBotLoggerAdapter(logging.getLogger('chatscript_cbe'), self, self.core)
 

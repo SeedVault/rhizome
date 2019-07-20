@@ -10,6 +10,7 @@ class DotFlow2ChatScriptMatch():
 
     def __init__(self, config: dict, dotbot: dict) -> None:
         """
+        Initialize class
         """
         self.config = config
         self.dotbot = dotbot
@@ -24,6 +25,7 @@ class DotFlow2ChatScriptMatch():
 
     def init(self, bot: ChatbotEngine):
         """
+        Initialize chatbot engine
 
         :param bot:
         :return:

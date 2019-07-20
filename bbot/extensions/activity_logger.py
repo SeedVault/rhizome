@@ -51,12 +51,14 @@ class ActivityLogger():
 
     def register_volley(self, bbot_response):
         """
+        Register each volley
         """
         self.logger.debug('Registering volley activity')
         self.register_activity({}, self.ACTIVITY_TYPE_VOLLEY, self.dotbot.get('volleyCost', 0))
 
     def register_function_call(self, name, response_code):
         """
+        Register each function call
         """
         self.logger.debug('Registering function call activity')
         self.register_activity({'fname': name}, self.ACTIVITY_TYPE_FUNCTION, 1)
@@ -64,6 +66,7 @@ class ActivityLogger():
 
     def register_activity(self, data, type, cost):
         """
+        Common register function
         """                    
         doc = {
             "_id" : ObjectId(),

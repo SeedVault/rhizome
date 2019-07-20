@@ -3,7 +3,7 @@ import logging
 import datetime
 import re
 import smokesignal
-from bbot.core import BBotCore, ChatbotEngine, BBotLoggerAdapter
+from bbot.core import BBotCore, ChatbotEngine, BBotLoggerAdapter, BBotFunctionsProxy
 
 
 class DotFlow2(ChatbotEngine):
@@ -58,13 +58,6 @@ class DotFlow2(ChatbotEngine):
         """
         self.logger = DotFlow2LoggerAdapter(logging.getLogger('dotflow2'), self, self)
 
-        #self.template_engine.init(self)
-
-        """if self.extensions:
-            for p in self.extensions:
-                #self.logger_df2.debug('Initializing extension ' + str(p))
-                self.extensions[p].init(self)
-        """
     def reset_response(self):
         """
         This initializes variables on each volley
@@ -394,6 +387,9 @@ class DotFlow2(ChatbotEngine):
             'return': response,
             'responseTime': int((end - start).total_seconds() * 1000)
         })
+
+        smokesignal.emit(BBotCore.SIGNAL_CALL_BBOT_FUNCTION_AFTER, name=func_name, response_code=BBotFunctionsProxy.RESPONSE_OK)
+
         return response
 
     def resolve_arg(self, arg, f_type, render: bool=False):
@@ -415,9 +411,8 @@ class DotFlow2(ChatbotEngine):
         self.logger.debug('Got resolved arg (no rendered): ' + str(resolved_arg))
 
         if render is True and type(resolved_arg) is str:
-            self.logger.debug('The running instruction asked to render this value')            
-            #resolved_arg = self.template_engine.render(resolved_arg)
-            resolved_arg = self.extensions['template_engine'].render(resolved_arg)
+            self.logger.debug('The running instruction asked to render this value')                        
+            resolved_arg = self.template_engine.render(resolved_arg)
             self.logger.debug('Got resolved arg (rendered): ' + str(resolved_arg))
 
         return resolved_arg

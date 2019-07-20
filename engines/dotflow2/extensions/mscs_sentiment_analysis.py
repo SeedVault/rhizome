@@ -10,6 +10,7 @@ class DotFlow2MSCSSentimentAnalysis():
 
     def __init__(self, config: dict, dotbot: dict) -> None:
         """
+        Initialize class
         """
         self.config = config
         self.dotbot = dotbot
@@ -23,6 +24,7 @@ class DotFlow2MSCSSentimentAnalysis():
 
     def init(self, bot: ChatbotEngine):
         """
+        Initialize extension
 
         :param bot:
         :return:

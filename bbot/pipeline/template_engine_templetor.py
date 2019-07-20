@@ -42,6 +42,7 @@ class TemplateEngineTemplator():
 
     def render(self, string: str) -> str:
         """
+        Renders any string with configured bbot custom functions and bot session vars
         """        
         self.logger.debug('Rendering template: "' + str(string) + '"')
 
@@ -79,6 +80,7 @@ class TemplateEngineTemplator():
 
     def process(self):
         """
+        Runs as pipeline process
         """        
         for k, r in enumerate(self.core.response['output']):            
             response_type = list(r)[0]

@@ -92,10 +92,11 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
 
         self.dotdb = None
         self.logger = None
-        self.is_fallback = False
+        self.cache = None
         self.extensions = []
         self.pipeline = []
 
+        self.is_fallback = False
         self.user_id = ''
         self.bot_id = ''
         self.org_id = ''
@@ -159,6 +160,7 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
 
     def process_pipeline(self):
         """
+        Executes all processes listed in the pipeline configuration
         """
         for p in self.pipeline:
             self.pipeline[p].process()
@@ -216,6 +218,30 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
             if response_type == 'text':
                 texts += r['text'] + '.\n' # @TODO improve this
         return texts
+
+
+    def extensions_cache(func):
+        """
+        Decorator to apply cache to extensions
+        @TODO add ttl 5min
+        """
+        def function_wrapper(self, args, f_type):
+            # key = botid_methodname_arg0_arg1_arg2
+            # adds args only if they are string, integer or boolean (avoiding nonhashagle values [even in nested values])
+            key = self.core.bot_id + "_" + func.__name__
+            for arg in args:
+                if isinstance(arg, (str, int, bool)):
+                    key += "_" + str(arg)
+            cached = self.core.cache.get(key)
+            if cached is None:
+                value = func(self, args, f_type)
+                self.core.cache.set(key, value)
+                return value
+            else:
+                self.logger.debug('Found cached value!')
+                return cached
+
+        return function_wrapper
 
 
 @Plugin.register

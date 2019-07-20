@@ -1,6 +1,6 @@
 """BBot engine based on Python."""
 import logging
-from bbot.core import ChatbotEngine, ChatbotEngineError, BBotLoggerAdapter
+from bbot.core import ChatbotEngine, ChatbotEngineError, BBotLoggerAdapter, Plugin
 
 
 class Python(ChatbotEngine):

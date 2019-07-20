@@ -31,7 +31,7 @@ class WeatherReport():
         
         core.register_function('weather', {'object': self, 'method': 'weather'})
 
-    #@DotFlow2.extensions_cache
+    @BBotCore.extensions_cache
     def weather(self, args, f_type):
         """
         Returns weather report

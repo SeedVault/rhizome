@@ -43,6 +43,7 @@ class TemplateEngineTemplator():
 
     def render(self, tmpl: str) -> str:
         """
+        Renders any string
         """
         self.logger.debug('Rendering template: "' + tmpl + '"')
 
