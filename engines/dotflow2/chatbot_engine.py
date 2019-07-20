@@ -2,7 +2,8 @@
 import logging
 import datetime
 import re
-from bbot.core import ChatbotEngine, BBotLoggerAdapter
+import smokesignal
+from bbot.core import BBotCore, ChatbotEngine, BBotLoggerAdapter
 
 
 class DotFlow2(ChatbotEngine):
@@ -31,7 +32,7 @@ class DotFlow2(ChatbotEngine):
         self.logger_level = ''          # Logging level for the module
 
         self.dotflow2_functions_map = {}    # Registered df2 functions
-        self.template_functions_map = {}    # Registered template custom functions
+        self.bbot_functions_map = {}    # Registered template custom functions
 
         # All DotFlow2 functions can be called by self.df2.x() - where x is the name of the function
         # This is used when developing a bot directly in python as a runtime, or when using $code DotFlow2 function
@@ -49,7 +50,7 @@ class DotFlow2(ChatbotEngine):
         self.executed_functions = []
         self.logger_df2 = None
 
-    def init(self):
+    def init(self, bot: ChatbotEngine):
         """
         Init environment for the engine.
         All init that can't be done in __init__ because plugins are not fully loaded yet
@@ -86,7 +87,7 @@ class DotFlow2(ChatbotEngine):
         #self.logger_df2.debug('Registering dotflow2 function ' + function_name)
         self.dotflow2_functions_map[function_name] = callback
 
-    def register_template_function(self, function_name: str, callback: dict):
+    def register_function(self, function_name: str, callback: dict):
         """
         Register template custom function mapped to its plugin method.
 
@@ -94,7 +95,7 @@ class DotFlow2(ChatbotEngine):
         :param callback: callable array class/method of plugin method
         """
         #self.logger_df2.debug('Registering template custom function ' + function_name)
-        self.template_functions_map[function_name] = callback
+        self.bbot_functions_map[function_name] = callback
 
     def add_output(self, bbot_output_obj: dict):
         """
@@ -166,9 +167,6 @@ class DotFlow2(ChatbotEngine):
 
         # returning response
         self.logger_df2.debug("DotFlow2 response: " + str(self.response))
-
-        # @TODO check what will happen with fu context when there is no match and there is a fallback bot with a match
-        bbot_response = self.fallback_bot(self, bbot_response)  # @TODO this might be called from a different place (or maybe we want to have control on this call?)
 
         return bbot_response
 
@@ -428,8 +426,9 @@ class DotFlow2(ChatbotEngine):
         self.logger_df2.debug('Got resolved arg (no rendered): ' + str(resolved_arg))
 
         if render is True and type(resolved_arg) is str:
-            self.logger_df2.debug('The running instruction asked to render this value')
-            resolved_arg = self.template_engine.render(resolved_arg)
+            self.logger_df2.debug('The running instruction asked to render this value')            
+            #resolved_arg = self.template_engine.render(resolved_arg)
+            resolver_arg = dispatcher.send(signal = BBotCore.SIGNAL_TEMPLATE_RENDER, sender = BBotCore.SENDER_CHATBOT_ENGINE, message = resolved_arg)[0][1]            
             self.logger_df2.debug('Got resolved arg (rendered): ' + str(resolved_arg))
 
         return resolved_arg

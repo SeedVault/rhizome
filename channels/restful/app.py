@@ -12,7 +12,6 @@ from collections import defaultdict
 from bbot.core import BBotCore, ChatbotEngine, Plugin
 from bbot.config import load_configuration
 
-
 def create_app():
     """Create and configure an instance of the application."""
     app = Flask(__name__)
@@ -51,7 +50,7 @@ def create_app():
             #    input_text = input_text + input_value
             req = bot.create_request(input_params, user_id, bot_id, org_id)
             bot_response = bot.get_response(req)
-            logger.info("Response from bot engine:", bot_response)
+            logger.info("Response from bot engine:" + str(bot_response))
 
             response = defaultdict(lambda: defaultdict(dict))    # create a response dict with autodict property
             for br in bot_response.keys():

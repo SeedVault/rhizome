@@ -245,6 +245,14 @@
         // update(botSaid);
       }
 
+      function escapeHtml(html){
+        var text = document.createTextNode(html);
+        var p = document.createElement('p');
+        p.appendChild(text);
+        return p.innerHTML;
+}
+
+
     $(document).ready(function(){
 
       $('#botname').html($('#bot_id').val());
@@ -303,7 +311,7 @@
               console.log(response);
               console.log("-".repeat(80));
               if (data.output.length) {
-                botResponse = data.output[0].text
+                botResponse = escapeHtml(data.output[0].text)
                 setTimeout("showBotResponse()", 500 + Math.floor((botResponse.length * 10) + 1));
               }
             }

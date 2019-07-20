@@ -1,11 +1,9 @@
 """"""
 import requests
 import logging
-from bbot.core import ChatbotEngine, BBotException
-from engines.dotflow2.chatbot_engine import DotFlow2, DotFlow2LoggerAdapter
+from bbot.core import BBotCore, ChatbotEngine, BBotException, BBotLoggerAdapter
 
-
-class DotFlow2WeatherReport():
+class WeatherReport():
     """Returns Weather Report"""
 
     def __init__(self, config: dict, dotbot: dict) -> None:
@@ -19,22 +17,22 @@ class DotFlow2WeatherReport():
         self.accuweather_api_key = ''
         self.logger_level = ''
 
-        self.bot = None
+        self.core = None
         self.logger = None
 
-    def init(self, bot: ChatbotEngine):
+    def init(self, core: BBotCore):
         """
 
         :param bot:
         :return:
         """
-        self.bot = bot
-        self.logger = DotFlow2LoggerAdapter(logging.getLogger('df2_ext.weather'), self, self.bot, '$weather')
-        bot.register_dotflow2_function('weather', {'object': self, 'method': 'df2_weather'})
-        bot.register_template_function('weather', {'object': self, 'method': 'df2_weather'})
+        self.core = core
+        self.logger = BBotLoggerAdapter(logging.getLogger('core_fnc.weather'), self, self.core.bot, '$weather')                
+        
+        core.register_function('weather', {'object': self, 'method': 'weather'})
 
-    @DotFlow2.extensions_cache
-    def df2_weather(self, args, f_type):
+    #@DotFlow2.extensions_cache
+    def weather(self, args, f_type):
         """
         Returns weather report
         @TODO return forecast based on args[1] date
@@ -42,11 +40,11 @@ class DotFlow2WeatherReport():
         :param args:
         :param f_type:
         :return:
-        """
+        """        
         try:
-            location = self.bot.resolve_arg(args[0], f_type)
+            location = self.core.resolve_arg(args[0], f_type)
         except IndexError:
-            raise BBotException({'code': 0, 'function': 'sendEmail', 'arg': 0, 'message': 'Location is missing.'})
+            raise BBotException({'code': 0, 'function': 'weather', 'arg': 0, 'message': 'Location is missing.'})
 
         try:
             date = args[1]
@@ -91,6 +89,6 @@ class DotFlow2WeatherReport():
             return r.json()
             # @TODO there should be a .bot config to narrow search location to a country or region
 
-            self.logger.error(r.text)
+        self.logger.error(r.text)
         #raise FlowError('Weather location key request status code ' + str(r.status_code))
 

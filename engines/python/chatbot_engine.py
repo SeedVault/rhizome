@@ -14,7 +14,17 @@ class Python(ChatbotEngine):
 
         :param config: Configuration values for the instance.
         """
-        super().__init__(config)
+        super().__init__(config, dotbot)
+
+        self.dotbot = dotbot
+        self.config = config
+        self.core = None
+        
+        self.bot_id = ''
+        self.user_id = ''
+
+    def init(self, core):
+        pass
 
     def get_response(self, request: dict) -> dict:
         """
@@ -23,14 +33,17 @@ class Python(ChatbotEngine):
         :param request: A dictionary with input data.
         :return: A response to the input data.
         """
-        bot = Plugin.get_class_from_fullyqualified(
-            'engines.python.bots.' + self.dotbot['python']['bot_class'] + '.PythonBot')
-        bot = bot(self.config)
-        bot.logger = logging.getLogger("python")
-        response =  bot.get_response(request)
+        self.bot_id = request['bot_id']
+        self.user_id = request['user_id']
 
-        bot.logger.debug("PythonBot response BBOT format: " + str(response))
-        return response
+        pbot = Plugin.get_class_from_fullyqualified(
+            'engines.python.bots.' + self.dotbot['python']['bot_class'] + '.PythonBot')
+        pbot = pbot(self.config, self)
+        pbot.logger = logging.getLogger("python")
+        response =  pbot.get_response(request)
+
+        pbot.logger.debug("PythonBot response BBOT format: " + str(response))
+        return {'output': [response]}
 
 
 

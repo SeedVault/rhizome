@@ -19,9 +19,9 @@ class ChatScript(ChatbotEngine):
 
         self.config = config
         self.dotbot = dotbot
-        self.extensions = []
-
+        self.extensions = []        
         self.logger_level = ''          # Logging level for the module
+        
         self.logger_cs = logging.getLogger("chatscript")
 
     def init(self, core):

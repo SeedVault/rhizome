@@ -5,7 +5,8 @@ import os
 import importlib
 import logging
 import logging.config
-from pydispatch import dispatcher
+import datetime
+import smokesignal
 from logging.config import DictConfigurator
 from bbot.config import load_configuration
 
@@ -34,7 +35,7 @@ class Plugin(metaclass=abc.ABCMeta):
         :param plugin_settings: Dictionary with initialization data.
         :return: An instance of the class defined in plugin_settings
         """
-        plugin = Plugin.get_class_from_fullyqualified(plugin_settings['plugin_class'])(plugin_settings, dotbot)
+        plugin = Plugin.get_class_from_fullyqualified(plugin_settings['plugin_class'])(plugin_settings, dotbot)        
         for attr_name in vars(plugin):
             if attr_name in plugin_settings:
                 attr_config = plugin_settings[attr_name]
@@ -50,7 +51,7 @@ class Plugin(metaclass=abc.ABCMeta):
 
                     plugin.__setattr__(attr_name, instances)
         #@TODO we might change this to run directly on _init_ with a callback
-        if hasattr(plugin, 'init'):
+        if hasattr(plugin, 'init'):            
             plugin.init(parent)
         return plugin
 
@@ -75,7 +76,8 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
     """Abstract base class for chatbot engines."""
 
     SIGNAL_GET_RESPONSE_AFTER = 'get_response_after'
-    SENDER_CHATBOT_ENGINE = 'chatbot_engine'
+    SIGNAL_CALL_BBOT_FUNCTION_AFTER = 'call_function_after'
+    SIGNAL_TEMPLATE_RENDER = 'template_render'
 
     def __init__(self, config: dict, dotbot: dict) -> None:
         """
@@ -92,14 +94,21 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         self.logger = None
         self.is_fallback = False
         self.extensions = []
+        self.pipeline = []
 
         self.user_id = ''
         self.bot_id = ''
         self.org_id = ''
+        self.logger_level = ''
         self.request = {}
+        self.executed_functions = []
+        self.bot = None
 
+        self.bbot_functions_map = {}    # Registered template functions
 
-        
+        self.bbot = BBotFunctionsProxy(self)
+
+        smokesignal.clear_all() # this shouldnt be needed. @TODO build the whole obj hierarchy, store it in a static var and decouple request session data
 
     def init(self, none):
         """
@@ -109,15 +118,30 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         # Init core
         #self.extensions[0].init(self)      
        
-
         # Instatiate chatbot engine and initialize
         config_path = os.path.abspath(os.path.dirname(__file__) + "/../instance")
         config = load_configuration(config_path, "BBOT_ENV")
-        self.bot = Plugin.load_plugin(config["chatbot_engines"][self.dotbot['chatbotEngine']], self.dotbot, self)
-        #logging.config.dictConfig(config['logging'])
-        #bot.logging_config = config['logging']
-               
+        
+        self.bot = Plugin.load_plugin(config["chatbot_engines"][self.dotbot['chatbotEngine']], self.dotbot, self)               
+        self.logger = BBotLoggerAdapter(logging.getLogger('core'), self, self.bot, 'core')        
+        self.bot.core = self
+
         #self.bot.init()
+
+    def register_function(self, function_name: str, callback: dict):
+        """
+        Register template custom function mapped to its plugin method.
+
+        :param function_name: .flow function name
+        :param callback: callable array class/method of plugin method
+        """
+        
+        self.bbot_functions_map[function_name] = callback
+
+    def resolve_arg(self, arg, f_type):
+        """
+        """
+        return arg
 
     def get_response(self, request: dict) -> dict:
         """
@@ -127,13 +151,22 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         :return: A response to the input data.
         """
 
-        bbot_response = self.bot.get_response(request)
+        self.response = self.bot.get_response(request)
+
+        self.process_pipeline()
+
+        smokesignal.emit(BBotCore.SIGNAL_GET_RESPONSE_AFTER, bbot_response = self.response)
         
-        bbot_response = self.fallback_bot(self, bbot_response)
-        dispatcher.send(signal = BBotCore.SIGNAL_GET_RESPONSE_AFTER, sender = BBotCore.SENDER_CHATBOT_ENGINE, message = [self, bbot_response])
+        #self.fallback_bot(self)
+       
+        return self.response
 
-        return bbot_response
-
+    def process_pipeline(self):
+        """
+        """
+        for p in self.pipeline:
+            self.pipeline[p].process()
+        
     @staticmethod
     def create_bot(config: dict, dotbot: dict={}):
         """
@@ -150,15 +183,8 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         if chatbot_engine not in config["chatbot_engines"]:
             raise ChatbotEngineNotFoundError()
 
-        core = Plugin.load_plugin(config["bbot_core"], dotbot)
-        logging.config.dictConfig(config['logging'])
-        core.logging_config = config['logging']
-
-        #bot.logger_core = BBotLoggerAdapter(logging.getLogger('bbot'), bot, bot)
-        
-        return core
-
-
+        bot = Plugin.load_plugin(config["bbot_core"], dotbot)           
+        return bot
 
     @staticmethod
     def create_request(chan_input: dict, user_id: str, bot_id: str = "",
@@ -185,48 +211,6 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         """
         return output
 
-    def fallback_bot(self, bot: ChatbotEngine, response: dict) -> dict:
-        """
-        @TODO this will be called from a pubsub event, so args might change
-        Call to fallback bots defined in dotbot when the main bot has a no match o
-        or when it doesnt answer or has an invalid response
-        @TODO this might be replaced by a conditional pipeline
-
-        :param bot:
-        :param response:
-        :return:
-        """
-        if not bot.is_fallback and (response.get('noMatch') or response.get('error')):
-            self.logger_core.debug('Bot engine has a no match. Looking fallback bots')
-
-            # try import bots
-            fbbs = bot.dotbot.get('fallbackBots', [])
-            for bot_name in fbbs:
-                self.logger_core.debug(f'Trying with bot {bot_name}')
-                bot_dotbot_container = bot.dotdb.find_dotbot_by_idname(bot_name)
-                if not bot_dotbot_container:
-                    raise Exception(f'Fallback bot not found {bot_name}')
-                else:
-                    bot_dotbot = bot_dotbot_container.dotbot
-
-                config_path = os.path.abspath(os.path.dirname(__file__) + "/../instance")
-                config = load_configuration(config_path, "BBOT_ENV")
-                bbot = create_bot(config, bot_dotbot)
-                bbot.is_fallback = True
-                req = ChatbotEngine.create_request(bot.request['input'], bot.user_id, 1, 1)
-                fallback_response = bbot.get_response(req)
-                if fallback_response.get('error'):
-                    self.logger_core.error('Fallback bot returned an invalid response. Discarding.')
-                    continue
-                if not fallback_response.get('noMatch'):
-                    self.logger_core.debug('Fallback bot has a response. Returning this to channel.')
-                    return fallback_response
-            if fbbs:
-                self.logger_core.debug('Fallback bot don\'t have a response either. Sending original main bot response if any')
-            else:
-                self.logger_core.debug('No fallback defined for this bot. Sending original main bot response if any')
-        return response
-
     def get_all_texts_from_output(bbot_response: dict) -> str:
         """Returns all concatenated texts from a bbot response"""
         texts = ''
@@ -243,14 +227,14 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
     """Abstract base class for chatbot engines."""
 
     @abc.abstractmethod
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: dict, dotbot: dict) -> None:
         """
         Initialize the instance.
 
         :param config: Configuration values for the instance.
         """
-        super(ChatbotEngine, self).__init__(config)
-
+        self.is_fallback = False
+        
     @abc.abstractmethod
     def get_response(self, request: dict) -> dict:
         """
@@ -286,6 +270,29 @@ class ChatbotEngineExtension():
     """Base class for extensions."""
     def __init__(self, config: dict, dotbot: dict) -> None:
         pass
+
+@Plugin.register
+class Extension(Plugin, metaclass=abc.ABCMeta):
+    """Abstract base class for extensions."""
+
+    @abc.abstractmethod
+    def __init__(self, config: dict) -> None:
+        """
+        Initialize the extension.
+
+        :param config: Configuration values for the instance.
+        """
+
+    @abc.abstractmethod
+    def init(self):
+        """        
+        """
+        
+    @abc.abstractmethod
+    def register_activity(self, function_name, response):
+        """        
+        """        
+
 
 @Plugin.register
 class ConfigReader(Plugin, metaclass=abc.ABCMeta):
@@ -367,7 +374,7 @@ class BBotLoggerAdapter(logging.LoggerAdapter):
     Custom Logger Adapter to add some context data and more control on DotFlow extensions logging behavior
     """
 
-    def __init__(self, logger, module: object, bot: ChatbotEngine, mod_name=''):
+    def __init__(self, logger, module: object, bot, mod_name=''):
         """
 
         :param logger:
@@ -380,8 +387,8 @@ class BBotLoggerAdapter(logging.LoggerAdapter):
         self.bot = bot
         self.mod_name = mod_name
 
-        if module.logger_level:
-            self.setLevel(logging.getLevelName(module.logger_level))
+        if module.logger_level:            
+            self.setLevel(module.logger_level)
 
         """ custom handlers dont work
         if module.config.get('logger_handler'):
@@ -396,14 +403,93 @@ class BBotLoggerAdapter(logging.LoggerAdapter):
         :param msg:
         :param kwargs:
         :return:
-        """
+        """        
         # We need to set extras here because we need bot object ref to get user_id when available (it's not available at extension's init)
+
+        bot_id = ''
+        try:
+            bot_id = self.bot.dotbot['id']
+        except AttributeError:
+            pass
+
+        bot_name = ''
+        try:
+            bot_name = self.bot.dotbot['name']
+        except AttributeError:
+            pass
+
+        user_id = ''
+        try:
+            user_id = self.bot.user_id
+        except AttributeError:
+            pass
+
+        user_ip = ''
+        try:
+            user_ip = self.bot.user_ip
+        except AttributeError:
+            pass
+
         extra = {
-            'bot_id': self.bot.dotbot['id'],
-            'bot_name': self.bot.dotbot['name'],
-            'user_id': getattr(self.bot, 'user_id', '<no user id>'),
-            'user_ip': getattr(self.bot, 'user_ip', '<no IP>')
+            'bot_id': bot_id,
+            'bot_name': bot_name,
+            'user_id': user_id,
+            'user_ip': user_ip
         }
 
         kwargs["extra"] = extra
         return msg, kwargs
+
+
+class BBotFunctionsProxy:
+    """
+    This class is a proxy to call BBot functions in a easy way
+    Ex:
+    bbot = BBotFunctionsProxy()
+    bbot.fname()
+    """
+
+    RESPONSE_OK = 1
+    RESPONSE_ERROR = 2
+
+    def __init__(self, core: BBotCore):
+        self.core = core
+
+    def __getattr__(self, name):
+        def wrapper(*args, **kwargs):
+            if name in self.core.bbot_functions_map:
+                return self.call_bbot_function(name, args, '')
+        return wrapper
+
+    def call_bbot_function(self, func_name: str, args: list, f_type: str):
+        """
+        Executes a BBot function
+
+        :param func_name: Name of the function
+        :param args: List with arguments
+        :param f_type: Function Type
+        :return:
+        """
+        self.core.logger.debug('Calling bbot function "' + func_name + '" with args ' + str(args))
+        start = datetime.datetime.now()
+        if func_name in self.core.bbot_functions_map:
+            response = getattr(self.core.bbot_functions_map[func_name]['object'],
+                               self.core.bbot_functions_map[func_name]['method'])(args, f_type)
+        else:
+            # @TODO for now we just send a warning to the log. We will make it an Exception later
+            self.core.logger.warning(func_name + '" it\'s not registered')
+            response = None
+        end = datetime.datetime.now()
+        self.core.logger.debug('Response: ' + str(response))
+
+        # Adds debug information about the executed function
+        self.core.executed_functions.append({
+            'function': func_name,
+            'args': args,
+            'return': response,
+            'responseTime': int((end - start).total_seconds() * 1000)
+        })
+
+        smokesignal.emit(BBotCore.SIGNAL_CALL_BBOT_FUNCTION_AFTER, name=func_name, response_code=BBotFunctionsProxy.RESPONSE_OK)
+
+        return response

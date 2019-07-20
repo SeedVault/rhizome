@@ -1,4 +1,4 @@
-"""Template engine."""
+"""Template engine. DEPRECATED"""
 import logging
 from jinja2 import Template, Environment
 from bbot.core import TemplateEngine, ChatbotEngine
@@ -35,7 +35,7 @@ class PluginTemplateEngine():
 
         :return:
         """
-        for f_name in self.bot.template_functions_map:  # register template functions from extensions
+        for f_name in self.bot.bbot_functions_map:  # register template functions from extensions
             #self.logger.debug('Adding template custom function "' + f_name + '"')
             template.globals[f_name] = getattr(self.bot.df2, f_name)
 

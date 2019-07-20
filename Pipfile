@@ -17,10 +17,10 @@ bcrypt = "*"
 marshmallow = "*"
 gunicorn = "*"
 smokesignal = "*"
-"jinja2" = "*"
 flask-cors = "*"
 pydispatcher = "*"
 boto3 = "*"
+jinja2 = "*"
 
 [dev-packages]
 pytest = "*"
@@ -28,6 +28,7 @@ pylint = "*"
 coverage = "*"
 mypy = "*"
 "pep257" = "*"
+rope = "*"
 
 [requires]
 python_version = "3.7"

@@ -3,9 +3,9 @@
 import logging
 import time
 import datetime
+import smokesignal
 from pymongo import MongoClient, DeleteMany
 from bson.objectid import ObjectId
-from pydispatch import dispatcher
 from bbot.core import BBotCore, ChatbotEngine, BBotException
 
 class SeedTokenRegister():
@@ -41,7 +41,7 @@ class SeedTokenRegister():
         self.database_name = parts[0]
         self.volleys = self.client[self.database_name]["volleys"]
 
-        dispatcher.connect(self.register_volley, signal=BBotCore.SIGNAL_GET_RESPONSE_AFTER, sender=dispatcher.Any)    
+        smokesignal.on(BBotCore.SIGNAL_GET_RESPONSE_AFTER, self.register_volley)
     
     def register_volley(self, message):
         """
