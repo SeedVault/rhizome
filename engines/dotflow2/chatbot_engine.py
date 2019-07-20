@@ -31,8 +31,7 @@ class DotFlow2(ChatbotEngine):
         self.extensions = []            # BBot extensions
         self.logger_level = ''          # Logging level for the module
 
-        self.dotflow2_functions_map = {}    # Registered df2 functions
-        self.bbot_functions_map = {}    # Registered template custom functions
+        self.dotflow2_functions_map = {}    # Registered df2 functions        
 
         # All DotFlow2 functions can be called by self.df2.x() - where x is the name of the function
         # This is used when developing a bot directly in python as a runtime, or when using $code DotFlow2 function
@@ -48,7 +47,7 @@ class DotFlow2(ChatbotEngine):
         self.nested_level_exec = 0
         self.detected_entities = {}
         self.executed_functions = []
-        self.logger_df2 = None
+        self.logger = None
 
     def init(self, bot: ChatbotEngine):
         """
@@ -57,7 +56,7 @@ class DotFlow2(ChatbotEngine):
 
         :return:
         """
-        self.logger_df2 = DotFlow2LoggerAdapter(logging.getLogger('dotflow2'), self, self)
+        self.logger = DotFlow2LoggerAdapter(logging.getLogger('dotflow2'), self, self)
 
         #self.template_engine.init(self)
 
@@ -86,16 +85,6 @@ class DotFlow2(ChatbotEngine):
         """
         #self.logger_df2.debug('Registering dotflow2 function ' + function_name)
         self.dotflow2_functions_map[function_name] = callback
-
-    def register_function(self, function_name: str, callback: dict):
-        """
-        Register template custom function mapped to its plugin method.
-
-        :param function_name: .flow function name
-        :param callback: callable array class/method of plugin method
-        """
-        #self.logger_df2.debug('Registering template custom function ' + function_name)
-        self.bbot_functions_map[function_name] = callback
 
     def add_output(self, bbot_output_obj: dict):
         """
@@ -130,7 +119,7 @@ class DotFlow2(ChatbotEngine):
         else:
             # get current contexts
             n_curr_context = self.get_current_contexts()
-            self.logger_df2.info('Current contexts: ' + str(n_curr_context))
+            self.logger.info('Current contexts: ' + str(n_curr_context))
 
             # looks for matching paths for the current contexts
             m_path = self.get_matching_paths(n_curr_context)  # @TODO will be more flexible if it accepts node list instead context list (but it will force to load all nodes even if there is no match on the first ones)
@@ -166,7 +155,7 @@ class DotFlow2(ChatbotEngine):
         bbot_response = self.response
 
         # returning response
-        self.logger_df2.debug("DotFlow2 response: " + str(self.response))
+        self.logger.debug("DotFlow2 response: " + str(self.response))
 
         return bbot_response
 
@@ -177,7 +166,7 @@ class DotFlow2(ChatbotEngine):
 
         :return: Nodes list
         """
-        self.logger_df2.info('Looking for nodes with context "' + context + '"')
+        self.logger.info('Looking for nodes with context "' + context + '"')
 
         fu_context_node = self.dotdb.find_node_by_id(self.dotbot['id'], context)  # Follow-up context are referred by node id
         if fu_context_node:
@@ -185,10 +174,10 @@ class DotFlow2(ChatbotEngine):
         else:
             fu_context_node = []
 
-        self.logger_df2.info('Got ' + str(len(fu_context_node)) + ' follow-up context node')
+        self.logger.info('Got ' + str(len(fu_context_node)) + ' follow-up context node')
 
         custom_contexts_nodes = self.dotdb.find_dotflows_by_context(self.bot_id, context)
-        self.logger_df2.info('Got ' + str(len(custom_contexts_nodes)) + ' custom context nodes')
+        self.logger.info('Got ' + str(len(custom_contexts_nodes)) + ' custom context nodes')
 
         contexts_nodes = fu_context_node + custom_contexts_nodes
         return contexts_nodes
@@ -232,7 +221,7 @@ class DotFlow2(ChatbotEngine):
         :param context:
         :return:
         """
-        self.logger_df2.info('Setting follow-up context to "' + context + '"')
+        self.logger.info('Setting follow-up context to "' + context + '"')
         self.session.set(self.user_id, 'context_current_followup', context)  # @TODO followup context should expire?
 
     def get_followup_context(self) -> str:
@@ -256,21 +245,21 @@ class DotFlow2(ChatbotEngine):
         # @TODO for now it only process pattern intent checking
 
         # Try from highest context priority to lower
-        self.logger_df2.info('Looking for matching paths...')
+        self.logger.info('Looking for matching paths...')
         matching_path = None
         matching_node = None
         for c in contexts:
-            self.logger_df2.info('Looking for context "' + c + '"')
+            self.logger.info('Looking for context "' + c + '"')
             nodes = self.get_nodes_by_context(c)
             for n in nodes:
-                self.logger_df2.info('Loading context node "' + n['id'] + '"')
+                self.logger.info('Loading context node "' + n['id'] + '"')
                 for p in n['paths']:
-                    self.logger_df2.info('Loading node path "' + p['id'] + '"')
+                    self.logger.info('Loading node path "' + p['id'] + '"')
                     result = self.resolve_conditions(p.get('conditions'))
 
-                    self.logger_df2.info('CONDITIONS RESULT: ' + str(result))
+                    self.logger.info('CONDITIONS RESULT: ' + str(result))
                     if result is True:
-                        self.logger_df2.info('>>>>>>> Found a matching path: ' + p['id'] + ' from node: ' + n['id'])
+                        self.logger.info('>>>>>>> Found a matching path: ' + p['id'] + ' from node: ' + n['id'])
                         matching_node = n
                         return p  # @TODO this stops when match is found. We will change thi when implementing ML matching instruction based on confidence score
 
@@ -287,10 +276,10 @@ class DotFlow2(ChatbotEngine):
         if conditions_expression is None or conditions_expression is True:  # if conditions is non existent or True, return True
             result = True
         else:
-            self.logger_df2.info(
+            self.logger.info(
                 '@@@@@@@@@@@@@@ Trying to execute conditions object: ' + str(conditions_expression) + ' @@@@@@@@@@@@@')
             result = self.execute_function(conditions_expression, 'C')
-            self.logger_df2.debug('Response object: ' + str(result))
+            self.logger.debug('Response object: ' + str(result))
 
         return result
 
@@ -300,7 +289,7 @@ class DotFlow2(ChatbotEngine):
 
         :param path: Path
         """
-        self.logger_df2.info('########## Trying to execute response path "' + path['name'] + '" ##############')
+        self.logger.info('########## Trying to execute response path "' + path['name'] + '" ##############')
 
         # Get current follow-up context to check if it changed during the responses execution
         old_fu_context = self.get_followup_context()
@@ -308,14 +297,14 @@ class DotFlow2(ChatbotEngine):
         responses = path.get('responses')
         if responses:
             for r in responses:
-                self.logger_df2.info('Trying to execute response object: ' + str(r))
+                self.logger.info('Trying to execute response object: ' + str(r))
                 self.execute_function(r, 'R')  # output functions will send content to the output directly
 
         curr_fu_context = self.get_followup_context()
         if old_fu_context == curr_fu_context:
             # fu context didn't change. This means there were no $goto executed and we reached the end of the current path.
             # The engine must run an implicit $return.
-            self.logger_df2.info('Reached end of path (no $goto executed). Running implicit $return now.')
+            self.logger.info('Reached end of path (no $goto executed). Running implicit $return now.')
             self.call_dotflow2_function('return', [], 'R')
 
         return True
@@ -328,14 +317,14 @@ class DotFlow2(ChatbotEngine):
         :return:
         """
         self.nested_level_exec += 1
-        self.logger_df2.debug('Trying to execute object: ' + str(dotflow2_obj))
+        self.logger.debug('Trying to execute object: ' + str(dotflow2_obj))
 
         func_name = self.get_func_name_from_dotflow2_obj(dotflow2_obj)
         args = self.get_args_from_dotflow2_obj(dotflow2_obj)
         if type(args) is not list:
             args = [args]
         response = self.call_dotflow2_function(func_name, args, f_type)
-        self.logger_df2.debug('Object response: ' + str(response))
+        self.logger.debug('Object response: ' + str(response))
 
         self.nested_level_exec -= 1
         return response
@@ -385,18 +374,18 @@ class DotFlow2(ChatbotEngine):
         :param f_type: Function Type
         :return:
         """
-        self.logger_df2.debug('Calling dotflow2 function "' + func_name + '" with args ' + str(args))
+        self.logger.debug('Calling dotflow2 function "' + func_name + '" with args ' + str(args))
         start = datetime.datetime.now()
         if func_name in self.dotflow2_functions_map:
             response = getattr(self.dotflow2_functions_map[func_name]['object'],
                                self.dotflow2_functions_map[func_name]['method'])(args, f_type)
         else:
             # @TODO for now we just send a warning to the log. We will make it an Exception later
-            self.logger_df2.warning(
+            self.logger.warning(
                 'The bot tried to run DotFlow2 function "' + func_name + '" but it\'s not registered')
             response = None
         end = datetime.datetime.now()
-        self.logger_df2.debug('Response: ' + str(response))
+        self.logger.debug('df2 function response: ' + str(response))
 
         # Adds debug information about the executed function
         self.executed_functions.append({
@@ -413,23 +402,23 @@ class DotFlow2(ChatbotEngine):
         :param arg:
         :return:
         """
-        self.logger_df2.debug('Will try to resolve arg: ' + str(arg))
+        self.logger.debug('Will try to resolve arg: ' + str(arg))
 
         if self.is_dotflow2_function(arg):
-            self.logger_df2.debug('The object is DotFlow2 function. Will try to execute it.')
+            self.logger.debug('The object is DotFlow2 function. Will try to execute it.')
             resolved_arg = self.execute_function(arg, f_type, render)
 
         else:  # it's a value so return it as response
-            self.logger_df2.debug('The object is a value')
+            self.logger.debug('The object is a value')
             resolved_arg = arg
 
-        self.logger_df2.debug('Got resolved arg (no rendered): ' + str(resolved_arg))
+        self.logger.debug('Got resolved arg (no rendered): ' + str(resolved_arg))
 
         if render is True and type(resolved_arg) is str:
-            self.logger_df2.debug('The running instruction asked to render this value')            
+            self.logger.debug('The running instruction asked to render this value')            
             #resolved_arg = self.template_engine.render(resolved_arg)
-            resolver_arg = dispatcher.send(signal = BBotCore.SIGNAL_TEMPLATE_RENDER, sender = BBotCore.SENDER_CHATBOT_ENGINE, message = resolved_arg)[0][1]            
-            self.logger_df2.debug('Got resolved arg (rendered): ' + str(resolved_arg))
+            resolved_arg = self.extensions['template_engine'].render(resolved_arg)
+            self.logger.debug('Got resolved arg (rendered): ' + str(resolved_arg))
 
         return resolved_arg
 
@@ -452,7 +441,7 @@ class DotFlow2(ChatbotEngine):
         #@TODO refactor all this code
         command = command[1:]  # get rid of colon prefix
         response = 'Unknown command. Try :help'
-        self.logger_df2.info(f"Executing command {command}")
+        self.logger.info(f"Executing command {command}")
 
         # :df2 dotflow2function(arg1,arg2,arg3...)
         if command.startswith('df2 '):

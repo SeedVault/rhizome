@@ -30,8 +30,7 @@ class DotFlow2MSCSSentimentAnalysis():
         self.bot = bot
         self.logger = DotFlow2LoggerAdapter(logging.getLogger('df2_ext.ssent_an'), self, self.bot, '$simpleSentimentAnalysis')
         bot.register_dotflow2_function('simpleSentimentAnalysis', {'object': self, 'method': 'df2_simpleSentimentAnalysis'})
-        bot.register_function('simpleSentimentAnalysis', {'object': self, 'method': 'df2_simpleSentimentAnalysis'})
-
+        
     def df2_simpleSentimentAnalysis(self, args, f_type):
         """
         Detects sentiment analysis using Microsoft Cognitive Services

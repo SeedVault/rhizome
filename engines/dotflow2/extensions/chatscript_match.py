@@ -31,8 +31,7 @@ class DotFlow2ChatScriptMatch():
         self.bot = bot
         self.logger = DotFlow2LoggerAdapter(logging.getLogger('df2_ext.csMatch'), self, self.bot, '$chatscriptMatch')
         bot.register_dotflow2_function('chatscriptMatch', {'object': self, 'method': 'chatscriptMatch'})
-        bot.register_function('chatscriptMatch', {'object': self, 'method': 'chatscriptMatch'})
-
+        
     def chatscriptMatch(self, args, f_type):
         """
         Evaluates ChatScript pattern

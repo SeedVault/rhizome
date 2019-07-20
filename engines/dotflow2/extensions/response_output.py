@@ -34,8 +34,7 @@ class DotFlow2ResponseOutput():
 
         for f in self.functions:
             bot.register_dotflow2_function(f, {'object': self, 'method': 'df2_' + f})
-            bot.register_function(f, {'object': self, 'method': 'df2_' + f})
-
+            
     def df2_text(self, args, f_type):
         """
         Returns BBot text output object
