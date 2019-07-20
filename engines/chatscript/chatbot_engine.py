@@ -4,7 +4,7 @@ import logging
 import traceback
 import re
 import json
-from bbot.core import BBotCore, ChatbotEngine, ChatbotEngineError
+from bbot.core import BBotCore, ChatbotEngine, ChatbotEngineError, BBotLoggerAdapter
 
 
 class ChatScript(ChatbotEngine):
@@ -16,16 +16,12 @@ class ChatScript(ChatbotEngine):
 
         :param config: Configuration values for the instance.
         """
-
-        self.config = config
-        self.dotbot = dotbot
-        self.extensions = []        
-        self.logger_level = ''          # Logging level for the module
-        
-        self.logger_cs = logging.getLogger("chatscript")
+        super().__init__(config, dotbot)
 
     def init(self, core):
-        pass
+        """
+        """
+        self.logger = BBotLoggerAdapter(logging.getLogger('chatscript_cbe'), self, self.core)
 
     def get_response(self, request: dict) -> dict:
         """
@@ -40,14 +36,14 @@ class ChatScript(ChatbotEngine):
         input_text = request['input']['text']
 
         cs_bot_id = self.dotbot['chatscript']['botId']
-        self.logger_cs.debug('Request received for bot id "' + cs_bot_id + '" with text: "' + str(input_text) + '"')
+        self.logger.debug('Request received for bot id "' + cs_bot_id + '" with text: "' + str(input_text) + '"')
 
         if not input_text:
             input_text = " " # at least one space, as per the required protocol
         msg_to_send = str.encode(u'%s\u0000%s\u0000%s\u0000' %
                                  (request["user_id"], self.dotbot['chatscript']['botId'], input_text))
         response = {} # type: dict
-        self.logger_cs.debug("Connecting to chatscript server host: " + self.dotbot['chatscript']['host'] + " - port: " + str(self.dotbot['chatscript']['port']) + " - botid: " + self.dotbot['chatscript']['botId'])
+        self.logger.debug("Connecting to chatscript server host: " + self.dotbot['chatscript']['host'] + " - port: " + str(self.dotbot['chatscript']['port']) + " - botid: " + self.dotbot['chatscript']['botId'])
         try:
             # Connect, send, receive and close socket. Connections are not
             # persistent
@@ -65,25 +61,25 @@ class ChatScript(ChatbotEngine):
             response = BBotCore.create_response(msg)
 
         except Exception as e:
-            self.logger_cs.critical(str(e) + "\n" + str(traceback.format_exc()))
+            self.logger.critical(str(e) + "\n" + str(traceback.format_exc()))
             raise Exception(e)
 
-        self.logger_cs.debug("Chatscript response: " + str(response))
+        self.logger.debug("Chatscript response: " + str(response))
 
         # check if chatscript is an error, it should add obb flagging it
         if not len(response):
             msg = "Empty response from ChatScript server"
-            self.logger_cs.critical(msg)
+            self.logger.critical(msg)
             raise Exception(msg)
         if response == "No such bot.\r\n":
             msg = "There is no such bot on this ChatScript server"
-            self.logger_cs.critical(msg)
+            self.logger.critical(msg)
             raise Exception(msg)
 
         # convert chatscript response to bbot response specification
         bbot_response = ChatScript.to_bbot_response(response)
 
-        self.logger_cs.debug("Chatscript response BBOT format: " + str(bbot_response))
+        self.logger.debug("Chatscript response BBOT format: " + str(bbot_response))
 
         return bbot_response
 

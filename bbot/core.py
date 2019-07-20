@@ -152,13 +152,9 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         """
 
         self.response = self.bot.get_response(request)
-
         self.process_pipeline()
-
-        smokesignal.emit(BBotCore.SIGNAL_GET_RESPONSE_AFTER, bbot_response = self.response)
-        
-        #self.fallback_bot(self)
-       
+        smokesignal.emit(BBotCore.SIGNAL_GET_RESPONSE_AFTER, bbot_response = self.response)        
+        self.logger.debug('Response from bbot metaengine: ' + str(self.response))
         return self.response
 
     def process_pipeline(self):
@@ -233,6 +229,13 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
 
         :param config: Configuration values for the instance.
         """
+        self.core = None        
+
+        self.dotbot = dotbot
+        self.config = config
+        self.bot_id = ''
+        self.user_id = ''
+        self.logger_level = ''
         self.is_fallback = False
         
     @abc.abstractmethod

@@ -50,8 +50,7 @@ def create_app():
             #    input_text = input_text + input_value
             req = bot.create_request(input_params, user_id, bot_id, org_id)
             bot_response = bot.get_response(req)
-            logger.info("Response from bot engine:" + str(bot_response))
-
+            
             response = defaultdict(lambda: defaultdict(dict))    # create a response dict with autodict property
             for br in bot_response.keys():
                 response[br] = bot_response[br]
@@ -75,7 +74,7 @@ def create_app():
             #@TODO add config to enable/disable show exception errors on chatbot output
             #@TODO the whole error handling needs to be refactored. logs/exceptions/response object
 
-        logger.debug("Response: " + str(response))
+        logger.debug("Response from restful channel: " + str(response))
         return json.dumps(response)
 
     def get_locale() -> str:

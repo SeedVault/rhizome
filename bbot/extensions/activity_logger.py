@@ -35,7 +35,7 @@ class ActivityLogger():
         """
         self.core = core
         
-        # Initialize the connection
+        # Initialize the connection @TODO improve this
         if 'mongodb_uri' not in self.config:
             raise RuntimeError("FATAL ERR: Missing config var uri")
         uri = self.config['mongodb_uri']
@@ -53,7 +53,7 @@ class ActivityLogger():
         """
         """
         self.logger.debug('Registering volley activity')
-        self.register_activity({}, self.ACTIVITY_TYPE_VOLLEY, self.dotbot['volleyCost'])
+        self.register_activity({}, self.ACTIVITY_TYPE_VOLLEY, self.dotbot.get('volleyCost', 0))
 
     def register_function_call(self, name, response_code):
         """
