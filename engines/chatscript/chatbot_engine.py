@@ -18,10 +18,12 @@ class ChatScript(ChatbotEngine):
         """
         super().__init__(config, dotbot)
 
-    def init(self, core):
+    def init(self, core: BBotCore):
         """
         Initializebot engine 
         """
+        super().init(core)
+
         self.logger = BBotLoggerAdapter(logging.getLogger('chatscript_cbe'), self, self.core)
 
     def get_response(self, request: dict) -> dict:

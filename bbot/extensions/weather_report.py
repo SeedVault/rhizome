@@ -1,10 +1,11 @@
 """"""
 import requests
 import logging
-from bbot.core import BBotCore, ChatbotEngine, BBotException, BBotLoggerAdapter
+from bbot.core import BBotCore, ChatbotEngine, BBotException, BBotLoggerAdapter, BBotExtensionException
 
 class WeatherReport():
     """Returns Weather Report"""
+
 
     def __init__(self, config: dict, dotbot: dict) -> None:
         """
@@ -29,7 +30,7 @@ class WeatherReport():
         self.core = core
         self.logger = BBotLoggerAdapter(logging.getLogger('core_fnc.weather'), self, self.core.bot, '$weather')                
         
-        core.register_function('weather', {'object': self, 'method': 'weather'})
+        core.register_function('weather', {'object': self, 'method': 'weather', 'cost': 0.1, 'register_enabled': True})
 
     @BBotCore.extensions_cache
     def weather(self, args, f_type):
@@ -40,7 +41,7 @@ class WeatherReport():
         :param args:
         :param f_type:
         :return:
-        """        
+        """                
         try:
             location = self.core.resolve_arg(args[0], f_type)
         except IndexError:
@@ -48,14 +49,14 @@ class WeatherReport():
 
         try:
             date = args[1]
-        except:
+        except IndexError:
             date = 'today'  # optional. default 'today'
 
-        self.logger.debug(f'Retrieving weather for {location}')
+        self.logger.info(f'Retrieving weather for {location}')
         st = self.search_text(location)
 
         if not st:
-            self.logger.debug("Location not found. Invalid location")
+            self.logger.info("Location not found. Invalid location")
             return {
                 'text': '<No weather data or invalid location>',  #@TODO should raise a custom exception which will be used for flow exceptions
                 'canonicalLocation': location
@@ -66,29 +67,39 @@ class WeatherReport():
         self.logger.debug("Accuweather Location Key: " + location_key)
 
         canonical_location = st[0]['LocalizedName'] + ', ' + st[0]['Country']['LocalizedName']
-        self.logger.debug("Canonical location: " + canonical_location)
-
+        self.logger.debug('Canonical location: ' + canonical_location)
+        self.logger.debug('Requeting Accuweather current conditions...')
         r = requests.get(
             f'http://dataservice.accuweather.com/currentconditions/v1/{location_key}?apikey={self.accuweather_api_key}&details=false')
-
+        self.logger.debug('Accuweather response: ' + str(r.json())[0:300])
         if r.status_code == 200:
             aw = r.json()
+
+            # adds accuweather logo to the bots response
+            self.core.bbot.text('Weather forecast provided by Accuweather')
+            self.core.bbot.image('https://www.botanic.io/bbot/static/images/accuweather_logo.png')
+
             return {
                 'text': aw[0]['WeatherText'],
                 'canonicalLocation': canonical_location
             }
 
-            self.logger.error(r.text)
-        #raise FlowError('Weather report request status code ' + str(r.status_code))
+        err_msg = r.json()['fault']['faultstring']
+        self.logger.critical(err_msg)            
+        raise BBotExtensionException(err_msg, BBotCore.FNC_RESPONSE_ERROR)
+        
 
     def search_text(self, location):
         # get locationkey based on provided location
+        self.logger.info(f'Requesting Accuweather location key...')
         r = requests.get(
             f'http://dataservice.accuweather.com/locations/v1/search?apikey={self.accuweather_api_key}&q={location}&details=false')
+        self.logger.debug('Accuweather response: ' + str(r.json())[0:300])
         if r.status_code == 200:
-            return r.json()
-            # @TODO there should be a .bot config to narrow search location to a country or region
+            return r.json()            
 
-        self.logger.error(r.text)
-        #raise FlowError('Weather location key request status code ' + str(r.status_code))
-
+        err_msg = r.json()['fault']['faultstring']
+        self.logger.critical(err_msg)
+        raise BBotExtensionException(err_msg, BBotCore.FNC_RESPONSE_ERROR)
+        
+        

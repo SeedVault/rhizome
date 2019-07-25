@@ -301,7 +301,11 @@
 
             if (data.error) {
                 console.log(data.error)
-                botResponse = 'Error from BBot'
+                if (data.output.length) {
+                  botResponse = escapeHtml(data.output[0].text)
+                } else {
+                  botResponse = 'Error from BBot'
+                }
                 showBotResponse()
                 return
             } else {

@@ -49,34 +49,51 @@ class ActivityLogger():
         smokesignal.on(BBotCore.SIGNAL_CALL_BBOT_FUNCTION_AFTER, self.register_function_call)
         smokesignal.on(BBotCore.SIGNAL_GET_RESPONSE_AFTER, self.register_volley)
 
-    def register_volley(self, bbot_response):
+    def register_volley(self, data):
         """
         Register each volley
         """
-        self.logger.debug('Registering volley activity')
-        self.register_activity({}, self.ACTIVITY_TYPE_VOLLEY, self.dotbot.get('volleyCost', 0))
+        
+        self.logger.debug('Registering volley activity')        
+        self.register_activity({
+            'type': self.ACTIVITY_TYPE_VOLLEY, 
+            'code': BBotCore.FNC_RESPONSE_OK,
+            'cost': self.dotbot.get('volleyCost', 0)
+            })
 
-    def register_function_call(self, name, response_code):
+    def register_function_call(self, data):
         """
         Register each function call
         """
-        self.logger.debug('Registering function call activity')
-        self.register_activity({'fname': name}, self.ACTIVITY_TYPE_FUNCTION, 1)
-        
+        if data['register_enabled'] is True:
+            self.logger.debug('Registering function call activity: function name "' + data['name'])
 
-    def register_activity(self, data, type, cost):
+            rfc_data = {'fname': data['name']}
+            
+            if 'error_message' in data:
+                rfc_data['error_message'] = data['error_message']
+
+            self.register_activity({
+                'data': rfc_data, 
+                'type': self.ACTIVITY_TYPE_FUNCTION, 
+                'code': data['response_code'],
+                'cost': data['cost']})        
+
+    def register_activity(self, data):
         """
         Common register function
         """                    
         doc = {
             "_id" : ObjectId(),
-            "type": type, 
+            "type": data['type'], 
+            "code": data['code'],
             "datetime": datetime.datetime.utcnow(),
             "botId": self.core.bot.bot_id,
             "userId": self.core.bot.user_id, 
-            "cost": cost
+            "cost": data['cost']
         }
-        doc = {**doc, **data}
+        if data.get('data') is not None:
+            doc = {**doc, **data['data']}
 
         self.mongo.activity.insert(doc)
 

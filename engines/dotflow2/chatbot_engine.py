@@ -3,7 +3,7 @@ import logging
 import datetime
 import re
 import smokesignal
-from bbot.core import BBotCore, ChatbotEngine, BBotLoggerAdapter, BBotFunctionsProxy
+from bbot.core import BBotCore, ChatbotEngine, BBotLoggerAdapter,BBotExtensionException
 
 
 class DotFlow2(ChatbotEngine):
@@ -31,31 +31,25 @@ class DotFlow2(ChatbotEngine):
         self.extensions = []            # BBot extensions
         self.logger_level = ''          # Logging level for the module
 
-        self.dotflow2_functions_map = {}    # Registered df2 functions        
-
-        # All DotFlow2 functions can be called by self.df2.x() - where x is the name of the function
-        # This is used when developing a bot directly in python as a runtime, or when using $code DotFlow2 function
-        self.df2 = DotFlow2FunctionsProxy(self)
+        self.functions_map = {}    # Registered df2 functions        
 
         #
-        self.bot_id = self.dotbot['id']
-
-        #
-        self.request = {}  # bbot request
-        self.response = {}
+        
         self.debug = {}  # This holds debug data from the DotFlow2 VM
         self.nested_level_exec = 0
         self.detected_entities = {}
         self.executed_functions = []
-        self.logger = None
+        
 
-    def init(self, bot: ChatbotEngine):
+    def init(self, core: BBotCore):
         """
         Init environment for the engine.
         All init that can't be done in __init__ because plugins are not fully loaded yet
 
         :return:
-        """
+        """        
+        super().init(core)
+        
         self.logger = DotFlow2LoggerAdapter(logging.getLogger('dotflow2'), self, self)
 
     def reset_response(self):
@@ -77,18 +71,8 @@ class DotFlow2(ChatbotEngine):
         :param callback: callable array class/method of plugin method
         """
         #self.logger_df2.debug('Registering dotflow2 function ' + function_name)
-        self.dotflow2_functions_map[function_name] = callback
-
-    def add_output(self, bbot_output_obj: dict):
-        """
-        Adds a BBot output object to the output stream
-        @TODO add bbot in/out protocol specification
-
-        :param bbot_output_obj:
-        :return:
-        """
-        self.response['output'].append(bbot_output_obj)
-
+        self.functions_map[function_name] = callback
+    
     def get_response(self, request: dict) -> dict:
         """
         Return a response based on the input data.
@@ -96,6 +80,7 @@ class DotFlow2(ChatbotEngine):
         :param request: A dictionary with input data.
         :return: A response to the input data.
         """
+        super().get_response(request)
         self.reset_response()
 
         self.request = request
@@ -134,23 +119,21 @@ class DotFlow2(ChatbotEngine):
                 self.response['noMatch'] = True
 
             # Add more debug information from flow engine
-            self.response['debug']['contexts'] = n_curr_context
-            self.response['debug']['matchingPathName'] = m_path['name'] if type(m_path) is dict else None
+            self.response['contexts'] = n_curr_context
+            self.response['matchingPathName'] = m_path['name'] if type(m_path) is dict else None
 
         # Add more debug not from the engine butnot from the flow
-        self.response['debug']['detectedEntities'] = self.detected_entities
+        self.response['detectedEntities'] = self.detected_entities
         self.response['debug']['executedFunctions'] = self.executed_functions
 
         # look for time consming functions
         #executed_functions_response_time_sort = sorted(self.executed_functions, key=lambda x: x['responseTime'], reverse=True)
         #executed_functions_expensive = list(filter(lambda x: x['responseTime'] > 0, executed_functions_response_time_sort))
 
-        bbot_response = self.response
-
         # returning response
         self.logger.debug("DotFlow2 response: " + str(self.response))
 
-        return bbot_response
+        return self.response
 
     def get_nodes_by_context(self, context: str) -> list:
         """
@@ -322,6 +305,11 @@ class DotFlow2(ChatbotEngine):
         self.nested_level_exec -= 1
         return response
 
+    def call_dotflow2_function(self, func_name, args, f_type):
+        """
+        """        
+        return getattr(self.bbot, func_name)(*args, f_type=f_type)
+
     def is_dotflow2_function(self, value) -> bool:
         """
         Returns true if the value has DotFlow2 function caracteristics (it won't check for registered functions)
@@ -358,40 +346,7 @@ class DotFlow2(ChatbotEngine):
         """
         return bbot_obj[self.DOTFLOW2_FUNCTION_PREFIX + self.get_func_name_from_dotflow2_obj(bbot_obj)]
 
-    def call_dotflow2_function(self, func_name: str, args: list, f_type: str):
-        """
-        Executes a DotFlow2 function
-
-        :param func_name: Name of the function
-        :param args: List with arguments
-        :param f_type: Function Type
-        :return:
-        """
-        self.logger.debug('Calling dotflow2 function "' + func_name + '" with args ' + str(args))
-        start = datetime.datetime.now()
-        if func_name in self.dotflow2_functions_map:
-            response = getattr(self.dotflow2_functions_map[func_name]['object'],
-                               self.dotflow2_functions_map[func_name]['method'])(args, f_type)
-        else:
-            # @TODO for now we just send a warning to the log. We will make it an Exception later
-            self.logger.warning(
-                'The bot tried to run DotFlow2 function "' + func_name + '" but it\'s not registered')
-            response = None
-        end = datetime.datetime.now()
-        self.logger.debug('df2 function response: ' + str(response))
-
-        # Adds debug information about the executed function
-        self.executed_functions.append({
-            'function': func_name,
-            'args': args,
-            'return': response,
-            'responseTime': int((end - start).total_seconds() * 1000)
-        })
-
-        smokesignal.emit(BBotCore.SIGNAL_CALL_BBOT_FUNCTION_AFTER, name=func_name, response_code=BBotFunctionsProxy.RESPONSE_OK)
-
-        return response
-
+    
     def resolve_arg(self, arg, f_type, render: bool=False):
         """
 
@@ -445,7 +400,7 @@ class DotFlow2(ChatbotEngine):
 
         # :instructionsList will list all supported DotFlow2 instructions
         elif command == 'df2InstructionsList':
-            f_list = ['$' + s for s in self.dotflow2_functions_map]  # add $ prefix to each .flow instruction
+            f_list = ['$' + s for s in self.functions_map]  # add $ prefix to each .flow instruction
             instructions_list = ", ".join(f_list)
             response = "Supported .Flow v2 instructions:\n" + instructions_list  #@TODO channels expect MD, not plain text. remove that \n
 
@@ -483,25 +438,6 @@ class DotFlow2(ChatbotEngine):
 
         return function_wrapper
 
-
-
-class DotFlow2FunctionsProxy:
-    """
-    This class is a proxy to call DotFlow2 functions in a easy way
-    Ex:
-    bbot = DotFlow2FunctionsProxy()
-    bbot.fname()
-    """
-    def __init__(self, bot: ChatbotEngine):
-        self.bot = bot
-
-    def __getattr__(self, name):
-        def wrapper(*args, **kwargs):
-            if name in self.bot.dotflow2_functions_map:
-                return self.bot.call_dotflow2_function(name, args, '')
-        return wrapper
-
-
 class DotFlow2LoggerAdapter(BBotLoggerAdapter):
     """
     Custom Logger Adapter to add a indented prefix to show nesting level of DotFlow functions
@@ -524,4 +460,4 @@ class DotFlow2LoggerAdapter(BBotLoggerAdapter):
         if self.mod_name:
             prefix = prefix + ' ' + self.mod_name + ': '
 
-        return prefix + msg, kwargs
+        return prefix + str(msg), kwargs

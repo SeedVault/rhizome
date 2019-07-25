@@ -35,7 +35,7 @@ class PluginTemplateEngine():
 
         :return:
         """
-        for f_name in self.bot.bbot_functions_map:  # register template functions from extensions
+        for f_name in self.bot.functions_map:  # register template functions from extensions
             #self.logger.debug('Adding template custom function "' + f_name + '"')
             template.globals[f_name] = getattr(self.bot.df2, f_name)
 

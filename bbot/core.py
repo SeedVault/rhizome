@@ -79,14 +79,16 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
     SIGNAL_CALL_BBOT_FUNCTION_AFTER = 'call_function_after'
     SIGNAL_TEMPLATE_RENDER = 'template_render'
 
+    FNC_RESPONSE_OK = 1
+    FNC_RESPONSE_ERROR = 0
+
     def __init__(self, config: dict, dotbot: dict) -> None:
         """
         Initialize the chatbot engine.
 
         :param config: Configuration values for the instance.
         """
-        #super(ChatbotEngine, self).__init__(config)
-
+        
         self.config = config
         self.dotbot = dotbot
 
@@ -105,7 +107,7 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         self.executed_functions = []
         self.bot = None
 
-        self.bbot_functions_map = {}    # Registered template functions
+        self.functions_map = {}    # Registered template functions
 
         self.bbot = BBotFunctionsProxy(self)
 
@@ -137,11 +139,11 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         :param callback: callable array class/method of plugin method
         """
         
-        self.bbot_functions_map[function_name] = callback
+        self.functions_map[function_name] = callback
 
-    def resolve_arg(self, arg, f_type):
+    def resolve_arg(self, arg: list, f_type: str='R', render: bool=False):
         """
-        """
+        """        
         return arg
 
     def get_response(self, request: dict) -> dict:
@@ -151,10 +153,15 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         :param request: A dictionary with input data.
         :return: A response to the input data.
         """
-
-        self.response = self.bot.get_response(request)
+        
+        self.response = self.bot.response
+        print(self.response)
+        self.bot.get_response(request)     
+        print(self.response)
         self.process_pipeline()
-        smokesignal.emit(BBotCore.SIGNAL_GET_RESPONSE_AFTER, bbot_response = self.response)        
+
+        smokesignal.emit(BBotCore.SIGNAL_GET_RESPONSE_AFTER, {'bbot_response': self.response})        
+
         self.logger.debug('Response from bbot metaengine: ' + str(self.response))
         return self.response
 
@@ -164,7 +171,12 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         """
         for p in self.pipeline:
             self.pipeline[p].process()
-        
+
+    def add_output(self, bbot_output_obj: dict):
+        """      
+        """
+        self.response['output'].append(bbot_output_obj)
+
     @staticmethod
     def create_bot(config: dict, dotbot: dict={}):
         """
@@ -178,11 +190,12 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         """
         chatbot_engine = dotbot['chatbotEngine']
         
-        if chatbot_engine not in config["chatbot_engines"]:
+        if chatbot_engine not in config['chatbot_engines']:
             raise ChatbotEngineNotFoundError()
 
-        bot = Plugin.load_plugin(config["bbot_core"], dotbot)           
-        return bot
+        bbot = Plugin.load_plugin(config['bbot_core'], dotbot)  
+        bbot.environment = config['environment']         
+        return bbot
 
     @staticmethod
     def create_request(chan_input: dict, user_id: str, bot_id: str = "",
@@ -218,7 +231,6 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
             if response_type == 'text':
                 texts += r['text'] + '.\n' # @TODO improve this
         return texts
-
 
     def extensions_cache(func):
         """
@@ -259,22 +271,41 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
 
         self.dotbot = dotbot
         self.config = config
-        self.bot_id = ''
         self.user_id = ''
         self.logger_level = ''
         self.is_fallback = False
+        self.bot_id = self.dotbot['id']        
+        self.request = {}  
+        self.response = {
+            'output': []           
+        }
+        self.logger = None        
+        
         
     @abc.abstractmethod
     def get_response(self, request: dict) -> dict:
         """
         Get response based on the request
         """
-
+        
     @abc.abstractmethod
-    def init(self) -> None:
+    def init(self, core: BBotCore) -> None:
         """
         Initializes chatbot engine with config and dotbot loaded
         """
+        self.core = core
+        self.bbot = core.bbot
+    
+    def add_output(self, bbot_output_obj: dict):
+        """
+        Adds a BBot output object to the output stream
+        @TODO add bbot in/out protocol specification
+
+        :param bbot_output_obj:
+        :return:
+        """
+        self.response['output'].append(bbot_output_obj)
+
 
 class ChatbotEngineNotFoundError(Exception):
     """ChatbotEngine not found."""
@@ -294,7 +325,17 @@ class BBotException(Exception):
     def __reduce__(self):
         return BBotException, self.args
 
+class BBotExtensionException(Exception):
+    """BBot extension error"""  
 
+    def __init__(self, message, code):
+
+        # Call the base class constructor with the parameters it needs
+        super().__init__(message)
+
+        # Now for your custom code...
+        self.code = code        
+      
 class ChatbotEngineExtension():
     """Base class for extensions."""
     def __init__(self, config: dict, dotbot: dict) -> None:
@@ -476,40 +517,63 @@ class BBotFunctionsProxy:
     Ex:
     bbot = BBotFunctionsProxy()
     bbot.fname()
-    """
-
-    RESPONSE_OK = 1
-    RESPONSE_ERROR = 2
-
+    """    
     def __init__(self, core: BBotCore):
         self.core = core
 
     def __getattr__(self, name):
-        def wrapper(*args, **kwargs):
-            if name in self.core.bbot_functions_map:
-                return self.call_bbot_function(name, args, '')
+        def wrapper(*args, **kwargs):   
+
+            try:
+                f_type
+            except NameError:
+                f_type = 'R'
+
+            print(args)
+            
+            # define function map woth both bbot and bot engine functions
+            self.global_functions_map = self.core.functions_map
+            if hasattr(self.core.bot, 'functions_map'):
+                self.global_functions_map = {**self.global_functions_map, **self.core.bot.functions_map}
+            
+            if name in self.global_functions_map: # will throw exception if bot doesnt have functions map
+                return self.call_function(name, args, f_type)
+            else:
+                self.core.logger.warning(
+                    'Tried to run function "' + name + '" but it\'s not registered')            
+        
         return wrapper
 
-    def call_bbot_function(self, func_name: str, args: list, f_type: str):
+    def call_function(self, func_name: str, args: list, f_type: str='R'):
         """
-        Executes a BBot function
+        Executes a BBot function or any bot engine function listed in functions_map attribute
 
         :param func_name: Name of the function
         :param args: List with arguments
         :param f_type: Function Type
         :return:
-        """
-        self.core.logger.debug('Calling bbot function "' + func_name + '" with args ' + str(args))
+        """        
+        self.core.logger.debug('Calling function "' + func_name + '" with args ' + str(args))
+        fmap = self.global_functions_map[func_name]
+                       
         start = datetime.datetime.now()
-        if func_name in self.core.bbot_functions_map:
-            response = getattr(self.core.bbot_functions_map[func_name]['object'],
-                               self.core.bbot_functions_map[func_name]['method'])(args, f_type)
-        else:
-            # @TODO for now we just send a warning to the log. We will make it an Exception later
-            self.core.logger.warning(func_name + '" it\'s not registered')
-            response = None
+        response = None
+        resp_code = BBotCore.FNC_RESPONSE_OK
+        error_message = ""
+        cost = fmap['cost']
+        exception = None
+
+        try:
+            response = getattr(fmap['object'],
+                            fmap['method'])(args, f_type)
+        except BBotExtensionException as e:                
+            exception = e # do not remove >> https://stackoverflow.com/questions/29268892/python-3-exception-deletes-variable-in-enclosing-scope-for-unknown-reason
+            resp_code = e.code
+            error_message = str(e)
+            cost = 0
+            response = '<error>' #@TODO customize and handle it by environment        
         end = datetime.datetime.now()
-        self.core.logger.debug('Response: ' + str(response))
+        self.core.logger.debug('Function response: ' + str(response))
 
         # Adds debug information about the executed function
         self.core.executed_functions.append({
@@ -518,7 +582,18 @@ class BBotFunctionsProxy:
             'return': response,
             'responseTime': int((end - start).total_seconds() * 1000)
         })
-
-        smokesignal.emit(BBotCore.SIGNAL_CALL_BBOT_FUNCTION_AFTER, name=func_name, response_code=BBotFunctionsProxy.RESPONSE_OK)
-
-        return response
+                        
+        smokesignal.emit(BBotCore.SIGNAL_CALL_BBOT_FUNCTION_AFTER, 
+            {
+                'name': func_name, 
+                'response_code': resp_code,                 
+                'error_message': error_message,
+                'register_enabled': fmap['register_enabled'], 
+                'cost': cost
+            })
+    
+        if resp_code == BBotCore.FNC_RESPONSE_OK:
+            return response
+        else:            
+            exception.args = (func_name  + ' function error', ) + exception.args
+            raise exception # propagate it to stop all functions execution

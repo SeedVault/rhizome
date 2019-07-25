@@ -49,33 +49,44 @@ def create_app():
             #    _ = input_type
             #    input_text = input_text + input_value
             req = bot.create_request(input_params, user_id, bot_id, org_id)
-            bot_response = bot.get_response(req)
+            bbot_response = bot.get_response(req)
             
-            response = defaultdict(lambda: defaultdict(dict))    # create a response dict with autodict property
-            for br in bot_response.keys():
-                response[br] = bot_response[br]
+            #response = defaultdict(lambda: defaultdict(dict))    # create a response dict with autodict property
+            #for br in bot_response.keys():
+            #   response[br] = bot_response[br]
             
             #response['output'] = restful.escape_html_from_text(response['output'])
             #logger.debug('Escaped response text: ' + str(response['output']))
             
-            if restful.params.get('ttsEnabled', None):          
+            if restful.params.get('ttsEnabled'):          
+                bbot_response['tts'] = {}
                 if not restful.tts:
-                    response['errors'].append({'message': 'No TTS engine configured for this bot.'})                      
+                    bbot_response['errors'].append({'message': 'No TTS engine configured for this bot.'})                      
                 else:
                     #retrieve TTS audio generated from all texts from bbot output                    
                     restful.tts.voice_locale = get_locale()
                     restful.tts.voice_id = get_tts_voice_id()
-                    all_texts = BBotCore.get_all_texts_from_output(response['output'])                
-                    response['tts']['url'] = restful.tts.get_speech_audio_url(all_texts, restful.params.get('ttsTimeScale', 100))           
+                    all_texts = BBotCore.get_all_texts_from_output(bbot_response['output'])                
+                    bbot_response['tts']['url'] = restful.tts.get_speech_audio_url(all_texts, restful.params.get('ttsTimeScale', 100))           
+
+            if restful.params.get('debugEnabled') is None:                
+                if 'debug' in bbot_response:                     
+                    del bbot_response['debug']
 
         except Exception as e:
             logger.critical(str(e) + "\n" + str(traceback.format_exc()))            
-            response = {'error': {'message': str(e)}}
-            #@TODO add config to enable/disable show exception errors on chatbot output
-            #@TODO the whole error handling needs to be refactored. logs/exceptions/response object
-
-        logger.debug("Response from restful channel: " + str(response))
-        return json.dumps(response)
+            if config['environment'] == 'development':
+                bbot_response = {
+                    'output': [{'text': str(e)}],
+                    'error': {'traceback': str(traceback.format_exc())}
+                    }
+            else:
+                bbot_response = {'output': [{'text': 'An error happened. Please try agan later.'}]}
+                # @TODO this should be configured in dotbot
+                # @TODO let bot engine decide what to do?
+            
+        logger.debug("Response from restful channel: " + str(bbot_response))
+        return json.dumps(bbot_response)
 
     def get_locale() -> str:
         """Returns locale for tts service. It first check on params if no value provided it fallsback to http header."""

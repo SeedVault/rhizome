@@ -1,6 +1,6 @@
 """BBot engine based on Python."""
 import logging
-from bbot.core import ChatbotEngine, ChatbotEngineError, BBotLoggerAdapter, Plugin
+from bbot.core import ChatbotEngine, ChatbotEngineError, BBotLoggerAdapter, Plugin, BBotCore
 
 
 class Python(ChatbotEngine):
@@ -16,25 +16,31 @@ class Python(ChatbotEngine):
         """
         super().__init__(config, dotbot)
 
-    def init(self, core):
+    def init(self, core: BBotCore):
+        """
+        Initializes python bot
+        """
+        super().init(core)
         self.logger = BBotLoggerAdapter(logging.getLogger('python_cbe'), self, self.core)
-
+                
     def get_response(self, request: dict) -> dict:
         """
         Return a response based on the input data.
 
         :param request: A dictionary with input data.
         :return: A response to the input data.
-        """
-        self.bot_id = request['bot_id']
+        """        
+        super().get_response(request)
+        
         self.user_id = request['user_id']
-
+        
         pbot = Plugin.get_class_from_fullyqualified(
             'engines.python.bots.' + self.dotbot['python']['bot_class'] + '.PythonBot')
         pbot = pbot(self.config, self)        
-        response =  pbot.get_response(request)
+        pbot.get_response(request)
         
-        return {'output': [response]}
+        return self.response
+        
 
 
 

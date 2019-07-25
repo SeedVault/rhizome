@@ -35,9 +35,9 @@ class TemplateEngineTemplator():
         :return:
         """
         c_functions = {}
-        for f_name in self.core.bbot_functions_map:  # register template functions from extensions
-            #self.logger.debug('Adding template custom function "' + f_name + '"')
-            c_functions[f_name] = getattr(self.core.bbot, f_name)
+        for f_name in self.core.functions_map:  # register template functions from extensions
+            self.logger.debug('Adding template custom function "' + f_name + '"')
+            c_functions[f_name] = getattr(self.core.bbot, f_name)            
         return c_functions
 
     def render(self, string: str) -> str:
@@ -72,7 +72,7 @@ class TemplateEngineTemplator():
 
         self.logger.debug('Template response: "' + response + '"')
 
-        if response.find('<function DotFlow2FunctionsProxy') is not -1:
+        if response.find('<function BBotFunctionsProxy') is not -1:
             self.logger.error('Templator returned an invalid response. Botdev forgot to escape $?')
             response = '<TEMPLATE RENDERING ERROR. CHECK DEBUG DATA>'  # @TODO add debug data in context to the instruction executed
         

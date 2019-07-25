@@ -29,7 +29,7 @@ class SendEmail():
         """
         self.core = core
         self.logger = BBotLoggerAdapter(logging.getLogger('core_ext.send_email'), self, self.core, '$sendEmail')        
-        core.register_function('sendEmail', {'object': self, 'method': 'sendEmail'})
+        core.register_function('sendEmail', {'object': self, 'method': 'sendEmail', 'cost': 0.001, 'register_enabled': True})
 
     def sendEmail(self, args, f_type):
         """

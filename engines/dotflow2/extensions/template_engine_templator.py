@@ -35,11 +35,19 @@ class TemplateEngineTemplator():
 
         :return:
         """
+        # get functions from bbot
         c_functions = {}
-        for f_name in self.bot.core.bbot_functions_map:  # register template functions from extensions
+        for f_name in self.bot.core.functions_map:  # register template functions from extensions
             #self.logger.debug('Adding template custom function "' + f_name + '"')
             c_functions[f_name] = getattr(self.bot.core.bbot, f_name)
+        
+        # get functions from dotflow2        
+        for f_name in self.bot.functions_map:  # register template functions from extensions
+            #self.logger.debug('Adding template custom function "' + f_name + '"')
+            c_functions[f_name] = getattr(self.bot.core.bbot, f_name)
+        
         return c_functions
+
 
     def render(self, tmpl: str) -> str:
         """

@@ -1,11 +1,9 @@
 """"""
 import random
 import logging
-from bbot.core import ChatbotEngine, BBotException
-from engines.dotflow2.chatbot_engine import DotFlow2LoggerAdapter
+from bbot.core import ChatbotEngine, BBotException, BBotCore, BBotLoggerAdapter
 
-
-class DotFlow2ResponseOutput():
+class BBotResponseOutput():
     """BBot response output objects"""
 
     def __init__(self, config: dict, dotbot: dict) -> None:
@@ -17,25 +15,25 @@ class DotFlow2ResponseOutput():
 
         self.logger_level = ''
 
-        self.bot = None
+        self.core = None
         self.logger = None
 
         self.functions = ['text', 'image', 'video', 'audio', 'button']
 
-    def init(self, bot: ChatbotEngine):
+    def init(self, core: BBotCore):
         """
         Initializes extension
 
         :param bot:
         :return:
         """
-        self.bot = bot
-        self.logger = DotFlow2LoggerAdapter(logging.getLogger('df2_ext.r_output'), self, self.bot, 'Output Response Ext')
+        self.core = core
+        self.logger = BBotLoggerAdapter(logging.getLogger('core.ext.response'), self, self.core.bot, 'bbotoutput')                
 
         for f in self.functions:
-            bot.register_dotflow2_function(f, {'object': self, 'method': 'df2_' + f})
+            core.register_function(f, {'object': self, 'method': f, 'cost': 0, 'register_enabled': False})
             
-    def df2_text(self, args, f_type):
+    def text(self, args, f_type):
         """
         Returns BBot text output object
 
@@ -52,12 +50,12 @@ class DotFlow2ResponseOutput():
         else:
             msg_idx = 0
 
-        msg = self.bot.resolve_arg(args[msg_idx], f_type, True)  # no need to resolve arg before this
+        msg = self.core.resolve_arg(args[msg_idx], f_type, True)  # no need to resolve arg before this
         bbot_response = {'text': str(msg)}
-        self.bot.add_output(bbot_response)
+        self.core.add_output(bbot_response)
         return bbot_response
 
-    def df2_image(self, args, f_type):
+    def image(self, args, f_type):
         """
         Returns BBot image output object
 
@@ -66,15 +64,15 @@ class DotFlow2ResponseOutput():
         :return:
         """
         try:
-            image_url = self.bot.resolve_arg(args[0], f_type, True)
+            image_url = self.core.resolve_arg(args[0], f_type, True)
         except IndexError:
             raise BBotException({'code': 210, 'function': 'image', 'arg': 0, 'message': 'Image URL in arg 0 is missing.'})
 
         bbot_response = {'image': {'url': image_url}}
-        self.bot.add_output(bbot_response)
+        self.core.add_output(bbot_response)
         return bbot_response
 
-    def df2_video(self, args, f_type):
+    def video(self, args, f_type):
         """
         Returns BBot video object
 
@@ -83,15 +81,15 @@ class DotFlow2ResponseOutput():
         :return:
         """
         try:
-            video_url = self.bot.resolve_arg(args[0], f_type, True)
+            video_url = self.core.resolve_arg(args[0], f_type, True)
         except IndexError:
             raise BBotException({'code': 220, 'function': 'video', 'arg': 0, 'message': 'Video URL in arg 0 is missing.'})
 
         bbot_response = {'video': {'url': video_url}}
-        self.bot.add_output(bbot_response)
+        self.core.add_output(bbot_response)
         return bbot_response
 
-    def df2_audio(self, args, f_type):
+    def audio(self, args, f_type):
         """
         Returns BBot audio object
 
@@ -100,15 +98,15 @@ class DotFlow2ResponseOutput():
         :return:
         """
         try:
-            audio_url = self.bot.resolve_arg(args[0], f_type, True)
+            audio_url = self.core.resolve_arg(args[0], f_type, True)
         except IndexError:
             raise BBotException({'code': 230, 'function': 'audio', 'arg': 0, 'message': 'Audio URL in arg 0 is missing.'})
 
         bbot_response = {'audio': {'url': audio_url}}
-        self.bot.add_output(bbot_response)
+        self.core.add_output(bbot_response)
         return bbot_response
 
-    def df2_button(self, args, f_type):
+    def button(self, args, f_type):
         """
         Returns BBot button output object
 
@@ -117,17 +115,17 @@ class DotFlow2ResponseOutput():
         """
         errors = []
         try:
-            button_id = self.bot.resolve_arg(args[0], f_type)
+            button_id = self.core.resolve_arg(args[0], f_type)
         except IndexError:
             errors.append({'code': 240, 'function': 'button', 'arg': 0, 'message': 'Button ID missing.'})
 
         try:
-            text = self.bot.resolve_arg(args[1], f_type)
+            text = self.core.resolve_arg(args[1], f_type)
         except IndexError:
             errors.append({'code': 241, 'function': 'button', 'arg': 1, 'message': 'Button text missing.'})
 
         try:
-            postback = self.bot.resolve_arg(args[2], f_type)
+            postback = self.core.resolve_arg(args[2], f_type)
         except IndexError:
             postback = None  # postback is optional #@TODO revisit this. buttonId is not a good idea after all
 
@@ -143,5 +141,5 @@ class DotFlow2ResponseOutput():
         if postback:
             bbot_response['button']['postback'] = postback
 
-        self.bot.add_output(bbot_response)
+        self.core.add_output(bbot_response)
         return bbot_response

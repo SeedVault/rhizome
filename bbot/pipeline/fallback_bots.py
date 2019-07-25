@@ -23,7 +23,7 @@ class FallbackBots():
         :param bot:
         :return:
         """
-        self.core = core        
+        self.core = core           
         self.logger = BBotLoggerAdapter(logging.getLogger('pipeline.fallbackbots'), self, self.core, 'FallbackBots')
    
     def process(self):
@@ -36,7 +36,7 @@ class FallbackBots():
         :param bot:
         :param response:
         :return:
-        """
+        """            
         if not self.core.bot.is_fallback and (self.core.response.get('noMatch') or self.core.response.get('error')):
             self.logger.debug('Bot engine has a no match. Looking fallback bots')
 

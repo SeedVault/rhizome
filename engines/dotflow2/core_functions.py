@@ -32,7 +32,7 @@ class DotFlow2CoreFunctions():
                           'set', 'get', 'regexMatch', 'and', 'or']
 
         for f in self.functions:
-            bot.register_dotflow2_function(f, {'object': self, 'method': 'df2_' + f})
+            bot.register_dotflow2_function(f, {'object': self, 'method': 'df2_' + f, 'cost': 0, 'register_enabled': False})
             
     ####################################################################################################################
 
