@@ -11,6 +11,7 @@ class Restful:
         self.dotbot = dotbot
         self.dotdb = None  #
         self.tts = None
+        self.actr = None
         
         self.params = {}
 

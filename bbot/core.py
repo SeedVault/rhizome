@@ -22,6 +22,7 @@ class Plugin(metaclass=abc.ABCMeta):
 
         :param config: Configuration values for the instance.
         """
+        #self.logger = BBotLoggerAdapter(logging.getLogger('core'), self, self, 'core')        
 
 
     @staticmethod
@@ -35,7 +36,8 @@ class Plugin(metaclass=abc.ABCMeta):
         :param plugin_settings: Dictionary with initialization data.
         :return: An instance of the class defined in plugin_settings
         """
-        plugin = Plugin.get_class_from_fullyqualified(plugin_settings['plugin_class'])(plugin_settings, dotbot)        
+        print('Loading module ' + plugin_settings['plugin_class'])
+        plugin = Plugin.get_class_from_fullyqualified(plugin_settings['plugin_class'])(plugin_settings, dotbot)                
         for attr_name in vars(plugin):
             if attr_name in plugin_settings:
                 attr_config = plugin_settings[attr_name]
@@ -154,10 +156,8 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         :return: A response to the input data.
         """
         
-        self.response = self.bot.response
-        print(self.response)
-        self.bot.get_response(request)     
-        print(self.response)
+        self.response = self.bot.response        
+        self.bot.get_response(request)             
         self.process_pipeline()
 
         smokesignal.emit(BBotCore.SIGNAL_GET_RESPONSE_AFTER, {'bbot_response': self.response})        
@@ -199,7 +199,7 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
 
     @staticmethod
     def create_request(chan_input: dict, user_id: str, bot_id: str = "",
-                       org_id: str = "") -> dict:
+                       org_id: str = "", pub_id: str = "") -> dict:
         """
         Create a base request.
 
@@ -209,7 +209,7 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         :param org_id: Organization ID
         :return: A dictionary with the given data
         """
-        return {"user_id": user_id, "bot_id": bot_id, "org_id": org_id, "input": chan_input}
+        return {"user_id": user_id, "bot_id": bot_id, "org_id": org_id, "pub_id": pub_id, "input": chan_input}
 
 
     @staticmethod
@@ -287,6 +287,9 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
         """
         Get response based on the request
         """
+        self.request = request
+        self.user_id = request.get('user_id', '')
+        self.pub_id = request.get('pub_id', '')
         
     @abc.abstractmethod
     def init(self, core: BBotCore) -> None:
@@ -479,25 +482,25 @@ class BBotLoggerAdapter(logging.LoggerAdapter):
         bot_id = ''
         try:
             bot_id = self.bot.dotbot['id']
-        except AttributeError:
+        except (AttributeError, TypeError):        
             pass
 
         bot_name = ''
         try:
             bot_name = self.bot.dotbot['name']
-        except AttributeError:
+        except (AttributeError, TypeError):        
             pass
 
         user_id = ''
         try:
             user_id = self.bot.user_id
-        except AttributeError:
+        except (AttributeError, TypeError):        
             pass
 
         user_ip = ''
         try:
             user_ip = self.bot.user_ip
-        except AttributeError:
+        except (AttributeError, TypeError):        
             pass
 
         extra = {
@@ -528,9 +531,7 @@ class BBotFunctionsProxy:
                 f_type
             except NameError:
                 f_type = 'R'
-
-            print(args)
-            
+                        
             # define function map woth both bbot and bot engine functions
             self.global_functions_map = self.core.functions_map
             if hasattr(self.core.bot, 'functions_map'):
@@ -589,7 +590,7 @@ class BBotFunctionsProxy:
                 'response_code': resp_code,                 
                 'error_message': error_message,
                 'register_enabled': fmap['register_enabled'], 
-                'cost': cost
+                'cost': cost # @TODO when function is cached in same process (funcion with same args is called multiple times in same volley) make cost 0
             })
     
         if resp_code == BBotCore.FNC_RESPONSE_OK:

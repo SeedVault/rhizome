@@ -6,6 +6,7 @@ import hashlib
 import logging
 import hashlib                
 import json
+from bbot.core import BBotLoggerAdapter
 
 class TTSAmazonPolly():
 
@@ -13,6 +14,7 @@ class TTSAmazonPolly():
         """Initializes class"""
         self.config = config
         self.dotbot = dotbot
+        self.logger_level = ''
         self.voice_id = 1
         self.voice_locale = 'en_US'
         self.tts_service_name = 'AmazonPolly'
@@ -22,9 +24,12 @@ class TTSAmazonPolly():
             'en_US': ['Joanna', 'Ivy', 'Kendra', 'Kimberly', 'Salli', 'Joey', 'Justin', 'Matthew']
         }
 
-
-        self.logger = logging.getLogger("tts")
+        self.logger = BBotLoggerAdapter(logging.getLogger('tts'), self, self, 'tts')        
     
+
+    def init(self, core):
+        pass
+
     def get_speech_audio_url(self, text: str, scale_time: int=100) -> str:
         """Returns audio file url with speech synthesis"""
 
@@ -37,7 +42,10 @@ class TTSAmazonPolly():
         # check if audio file is available in cache folder
         exists = os.path.isfile(self.get_file_full_path(filename))
         if not exists:
+            self.logger.debug('Not found in cache. Requesting audio file to amazon polly')
             self.gen_speech_audio(text, filename)
+        else:
+            self.logger.debug('Found audio file in cache')
 
         return self.config['cache_web_url'] + filename
 
@@ -111,3 +119,80 @@ class TTSAmazonPolly():
         """Parses the ssml to adjust all timescales on it"""
         #@TODO
         return '<speak><prosody rate="' + str(scale_time) + '%">' + text + '</prosody></speak>'
+
+    
+    def get_speechmark(self, text: str, speechmark_type: str, time_scale: int) -> str:
+        """Returns speechmark and stores it in cache"""
+
+        text = self.set_scaletime(text, time_scale)
+
+        filename = self.get_speechmark_filename(text, speechmark_type)
+
+        self.logger.debug('Checking if Amazon Polly word speechmark is in cache (file "' + filename + '"')
+
+        # checking if it's already in the cache
+        fullpath_filename = self.get_file_full_path(filename)
+        try:
+            with open(fullpath_filename, 'r') as myfile:
+                speechmark = myfile.read()
+                self.logger.debug('Found in cache')
+                return json.loads(speechmark)
+        except FileNotFoundError:
+            self.logger.debug('It\'s not. Requsting it to Amazon Polly')
+
+        # it's not, lets generate it
+        polly_client = boto3.Session(
+                aws_access_key_id = self.config['aws_access_key_id'],                     
+                aws_secret_access_key = self.config['aws_secret_access_key'],
+                region_name = self.config['aws_region_name']).client('polly')
+
+        voice_id = self.get_amazonpolly_voice_id_from_locale()
+        
+        # convert symbols to text (< 'less than', > 'greater than', etc)
+        text = self.convert_symbols(text)
+
+        self.logger.debug('Requesting speechmark word to Amazon Polly')
+        response = polly_client.synthesize_speech(
+                    SpeechMarkTypes = [speechmark_type],
+                    VoiceId = voice_id,
+                    OutputFormat='json', 
+                    TextType='ssml',
+                    Text = text)
+
+        self.logger.debug("Amazon Polly reponse: " + str(response))
+
+        if response.get('AudioStream', None):   
+            sm = response['AudioStream'].read().decode('utf8') # Polly provides a binary so convert it to utf8 string        
+            # convert it to proper json list (still a json string anyway, and why is Polly sending json NL separated???)
+            sm = '[' + sm.replace("\n", ",")[:-1] + ']'
+            # now store to cache
+            file = open(fullpath_filename, 'w')            
+            file.write(sm)
+            file.close()
+            self.logger.debug('Providing and storing speechmark "' + filename + '"')
+            self.logger.debug('Speechmark response:')
+            self.logger.debug(sm)
+            return json.loads(sm) # now convert json string to dict
+
+        return False
+
+
+    def get_speechmark_filename(self, text: str, speechmark_type: str) -> str:
+        """Returns filename based on the text hash and prefixes tts service name and voice locale and voice id and format type"""    
+        return self.get_filename(text) + '_' + speechmark_type + '_speechmark.txt'
+
+    def get_visemes(self, text, time_scale: int) -> dict:
+        """
+        Returns a dict with visemes from Amazon Polly
+        """        
+        visemes = self.get_speechmark(text, 'viseme', time_scale)
+        
+        v_res = []
+        for v in visemes:            
+            v_res.append({
+                'time': v['time'],
+                'value': v['value'] 
+            })            
+        self.logger.debug('Visemes response: ' + str(v_res))
+        return v_res
+   

@@ -17,13 +17,12 @@ services:
         networks:
             - botanic_lan
         ports:
-            - 1025:1025
+            - 1024:1024
         tty: true
         volumes:
             - ./volumes/opt/ChatScript-master/LOGS:/opt/ChatScript-master/LOGS
             - ./volumes/opt/ChatScript-master/TMP:/opt/ChatScript-master/TMP
             - ./volumes/opt/ChatScript-master/USERS:/opt/ChatScript-master/USERS
-
     mongo:
         image: mongo
         networks:

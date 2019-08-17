@@ -58,7 +58,7 @@ class ActivityLogger():
         self.register_activity({
             'type': self.ACTIVITY_TYPE_VOLLEY, 
             'code': BBotCore.FNC_RESPONSE_OK,
-            'cost': self.dotbot.get('volleyCost', 0)
+            'cost': self.dotbot.get('volleyCost', 0)            
             })
 
     def register_function_call(self, data):
@@ -90,6 +90,7 @@ class ActivityLogger():
             "datetime": datetime.datetime.utcnow(),
             "botId": self.core.bot.bot_id,
             "userId": self.core.bot.user_id, 
+            'pubId': self.core.bot.pub_id,
             "cost": data['cost']
         }
         if data.get('data') is not None:

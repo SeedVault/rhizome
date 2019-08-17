@@ -21,6 +21,7 @@ flask-cors = "*"
 pydispatcher = "*"
 boto3 = "*"
 jinja2 = "*"
+web3 = "*"
 
 [dev-packages]
 pytest = "*"

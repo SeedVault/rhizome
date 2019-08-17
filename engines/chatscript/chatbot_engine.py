@@ -33,6 +33,7 @@ class ChatScript(ChatbotEngine):
         :param request: A dictionary with input data.
         :return: A response to the input data.
         """
+        super().get_response(request)
 
         self.request = request
 
@@ -80,14 +81,10 @@ class ChatScript(ChatbotEngine):
             raise Exception(msg)
 
         # convert chatscript response to bbot response specification
-        bbot_response = ChatScript.to_bbot_response(response)
+        self.to_bbot_response(response)
 
-        self.logger.debug("Chatscript response BBOT format: " + str(bbot_response))
-
-        return bbot_response
-
-    @staticmethod
-    def to_bbot_response(response: str) -> dict:
+       
+    def to_bbot_response(self, response: str) -> dict:
         """
         Converts Chatscript response to BBOT response speciication
         :param response:  Chatscript response
@@ -95,15 +92,12 @@ class ChatScript(ChatbotEngine):
         """
         # split response and oob
         #response, oob = ChatScript.split_response(response)
-
-        bbot_response = []
-
+    
         response_split = response.split('\\n')
         for rs in response_split:
-            bbot_response.append({'text': rs})
+            #rs = {**bbot_response, **oob} @TODO check oob support
+            self.core.bbot.text(rs)
 
-        #bbot_response = {**bbot_response, **oob}
-        return {'output': bbot_response}
 
     @staticmethod
     def split_response(response: str) -> tuple:

@@ -195,8 +195,12 @@
                 <input type="text" class="form-control" id="url" name="url" value="http://localhost:5000/restful_channel">
               </div>
               <div class="form-group">
+                <label for="pub_id" class="col-form-label">Pub ID:</label>
+                <input type="text" class="form-control" id="pub_id" name="pub_id" value="">
+              </div>
+              <div class="form-group">
                 <label for="bot_id" class="col-form-label">Bot ID:</label>
-                <input type="text" class="form-control" id="bot_id" name="bot_id" value="7">
+                <input type="text" class="form-control" id="bot_id" name="bot_id" value="">
               </div>
               <div class="form-group">
                 <label for="user_id" class="col-form-label">User ID:</label>
@@ -279,6 +283,7 @@
         e.preventDefault();
         var data = {
           'orgId': 1,
+          'pubId': $('#pub_id').val(),
           'botId': $('#bot_id').val(),
           'userId': $('#user_id').val(),
           'input': {

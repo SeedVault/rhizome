@@ -31,9 +31,10 @@ def create_app():
         try:
             restful.params = request.get_json(force=True)
             logger.debug("Received request:" + str(restful.params))
-            user_id = restful.params['userId']
-            bot_id = restful.params['botId']
-            org_id = restful.params['orgId']
+            user_id = restful.params.get('userId')
+            bot_id = restful.params.get('botId')
+            org_id = restful.params.get('orgId')
+            pub_id = restful.params.get('pubId')
             input_params = restful.params['input']
             
             # if 'runBot' in params:
@@ -48,7 +49,7 @@ def create_app():
                 # bot.get_response(input_type, input_value)
             #    _ = input_type
             #    input_text = input_text + input_value
-            req = bot.create_request(input_params, user_id, bot_id, org_id)
+            req = bot.create_request(input_params, user_id, bot_id, org_id, pub_id)
             bbot_response = bot.get_response(req)
             
             #response = defaultdict(lambda: defaultdict(dict))    # create a response dict with autodict property
@@ -68,6 +69,19 @@ def create_app():
                     restful.tts.voice_id = get_tts_voice_id()
                     all_texts = BBotCore.get_all_texts_from_output(bbot_response['output'])                
                     bbot_response['tts']['url'] = restful.tts.get_speech_audio_url(all_texts, restful.params.get('ttsTimeScale', 100))           
+
+            if restful.params.get('actrEnabled', None): 
+                bbot_response['actr'] = {}
+                if not restful.tts:
+                    response['errors'].append({'message': 'No ACTR engine configured for this bot.'})                      
+                else:
+                    all_texts = BBotCore.get_all_texts_from_output(bbot_response['output'])                                    
+                    bbot_response['actr'] = restful.actr.get_actr(
+                        all_texts,                         
+                        get_locale(),
+                        get_tts_voice_id(), 
+                        get_timescale())
+
 
             if restful.params.get('debugEnabled') is None:                
                 if 'debug' in bbot_response:                     
@@ -113,7 +127,12 @@ def create_app():
 
     def get_tts_voice_id() -> str:
         """Returns bbot voice id. First check on params. Default value is 1"""
-        return restful.dotbot.get('ttsVoiceId', None) or restful.params.get('ttsVoiceId', None) or '0'
+        return restful.dotbot.get('ttsVoiceId', None) or restful.params.get('ttsVoiceId', None) or 0
+
+    def get_timescale() -> str: #@TODO we might need a method to get values like this
+        """Returns bbot voice id. First check on params. Default value is 1"""
+        return restful.dotbot.get('ttsTimeScale', None) or restful.params.get('ttsTimeScale', None) or 100
+
 
     def get_http_locale() -> str:
         """ @TODO """
