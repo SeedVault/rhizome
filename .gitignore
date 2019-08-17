@@ -49,5 +49,5 @@ lib
 lib64
 pip-log.txt
 
-engines/python/bots
+engines/python/bots/*.py
 docker/volumes
