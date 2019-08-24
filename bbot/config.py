@@ -43,6 +43,7 @@ def load_configuration(config_path: str, var_name: str,
 
     # Load YAML file and interpolate its content with environment variables
     config_file = config_path + "/config_" + environment_name + ".yml"
+
     pattern = re.compile(r'^\<%= ENV\[\'(.*)\'\] %\>(.*)$')
     yaml.add_implicit_resolver("!env", pattern)
     def env_constructor(loader, node):
@@ -59,5 +60,6 @@ def load_configuration(config_path: str, var_name: str,
         return eval(os.environ[env_var] # pylint: disable=eval-used
                     + remaining_path)
     yaml.add_constructor('!env_unquoted', env_unquoted_constructor)
+    
     with open(config_file, 'r') as ymlfile:
-        return yaml.load(ymlfile)
+        return yaml.load(ymlfile, Loader=yaml.Loader) # https://github.com/yaml/pyyaml/issues/265
