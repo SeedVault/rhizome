@@ -6,6 +6,8 @@ import hashlib
 import logging
 import hashlib                
 import json
+from bs4 import BeautifulSoup
+
 from bbot.core import BBotLoggerAdapter
 
 class TTSAmazonPolly():
@@ -59,8 +61,8 @@ class TTSAmazonPolly():
 
         voice_id = self.get_amazonpolly_voice_id_from_locale()
         
-        # convert symbols to text (< 'less than', > 'greater than', etc)
-        text = self.convert_symbols(text)
+        
+        text = self.process(text)
 
         self.logger.debug('Requesting speech audio to Amazon Polly voice id "' + voice_id + '" - Text: "' + text + '"')
         response = polly_client.synthesize_speech(                    
@@ -97,24 +99,7 @@ class TTSAmazonPolly():
             If no valid voice id is provided will default to id 1"""
         return self.voice_id_locale_map[self.voice_locale][int(self.voice_id)]
 
-    def convert_symbols(self, text: str) -> str:
-        """Convert symbols to text (< 'less than', > 'greater than', etc) 
-        @TODO multilanguage support
-        @TODO check previous comas
-        """
-        text = text.replace('&lt;', ', less than symbol, ')
-        text = text.replace('&gt;', ', greater than symbol, ')
-        text = text.replace('[', ', open square brackets, ')
-        text = text.replace(']', ', close sqare brackets, ')
-        text = text.replace('{', ', open curly brackets, ')
-        text = text.replace('}', ', close curly brackets, ')
-        text = text.replace('(', ', open parenthesis, ')
-        text = text.replace(')', ', close parenthesis, ')        
-        text = text.replace('&quot', ', quotes, ')
-        text = text.replace('&#x27;', '')        
-        text = text.replace('$', ', $ symbol, ')        # @TODO this should convert values like $123 into '123 dollars'
-        return text
-
+    
     def set_scaletime(self, text, scale_time: int=100) -> str:
         """Parses the ssml to adjust all timescales on it"""
         #@TODO
@@ -148,8 +133,7 @@ class TTSAmazonPolly():
 
         voice_id = self.get_amazonpolly_voice_id_from_locale()
         
-        # convert symbols to text (< 'less than', > 'greater than', etc)
-        text = self.convert_symbols(text)
+        text = self.process(text)
 
         self.logger.debug('Requesting speechmark word to Amazon Polly')
         response = polly_client.synthesize_speech(
@@ -196,3 +180,43 @@ class TTSAmazonPolly():
         self.logger.debug('Visemes response: ' + str(v_res))
         return v_res
    
+        
+    def process(self, text: str) -> str:
+        """
+        """
+        # convert symbols to text (< 'less than', > 'greater than', etc)
+        text = self.convert_symbols(text)
+
+        # convert html content
+        text = self.convert_html(text)
+        return text
+
+    def convert_symbols(self, text: str) -> str:
+        """Convert symbols to text (< 'less than', > 'greater than', etc) 
+        @TODO multilanguage support
+        @TODO check previous comas
+        """
+        text = text.replace('&lt;', ', less than symbol, ')
+        text = text.replace('&gt;', ', greater than symbol, ')
+        text = text.replace('[', ', open square brackets, ')
+        text = text.replace(']', ', close sqare brackets, ')
+        text = text.replace('{', ', open curly brackets, ')
+        text = text.replace('}', ', close curly brackets, ')
+        text = text.replace('(', ', open parenthesis, ')
+        text = text.replace(')', ', close parenthesis, ')        
+        text = text.replace('&quot', ', quotes, ')
+        text = text.replace('&#x27;', '')        
+        text = text.replace('$', ', $ symbol, ')        # @TODO this should convert values like $123 into '123 dollars'
+        return text
+
+    def convert_html(self, text: str) -> str:
+        """
+        """
+        soup = BeautifulSoup(text, "html.parser") # using this parser prevents BeautifulSoup trying to rewrite a well-formated html
+        
+        # converts all anchor tags into its enclosed text
+        all_anchors = soup('a')        
+        for aa in all_anchors:
+            aa.replace_with(aa.get_text())        
+
+        return str(soup)

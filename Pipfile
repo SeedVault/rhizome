@@ -22,6 +22,7 @@ pydispatcher = "*"
 boto3 = "*"
 jinja2 = "*"
 web3 = "*"
+bs4 = "*"
 
 [dev-packages]
 pytest = "*"
