@@ -46,7 +46,9 @@ class TokenManagementParityDevETHSeedDemo():
         """
         """               
         self.logger.debug('Paying volley activity')        
-        self.payment(self.seed_demo_token_address, self.seed_demo_volley_to_address, self.seed_demo_volley_cost)
+        volley_cost = self.core.bot.dotbot.get('volleyCost')
+        if volley_cost is not None: # register bot volleys only if it has declared volley cost (can be 0)
+            self.payment(self.seed_demo_token_address, self.seed_demo_volley_to_address, volley_cost)
 
     def function_payment(self, data):
         """
@@ -58,7 +60,7 @@ class TokenManagementParityDevETHSeedDemo():
     def payment(self, fromAddress, toAddress, value):
         """
         """
-        self.logger.debug('Transfering ' + value + 'ETH from ' + fromAddress + ' to ' + toAddress)
+        self.logger.debug('Transfering ' + str(value) + 'ETH from ' + fromAddress + ' to ' + toAddress)
         response = self.web3.parity.personal.sendTransaction( 
             {
                 'to': Web3.toChecksumAddress(toAddress), 
