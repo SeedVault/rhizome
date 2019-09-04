@@ -159,13 +159,14 @@ class Telegram:
             self.logger.debug('No telegram enabled bots')
 
         # cert file only used on local machines with self-signed certificate
-        cert_file = open(self.config['cert_filename'], 'rb') if self.config['cert_filename'] else None
+        cert_file = open(self.config['cert_filename'], 'rb') if self.config.get('cert_filename') else None
 
         for tdc in telegram_dotbots_c:
             td = tdc.dotbot
 
             self.logger.debug('Checking Telegram webhook for botid ' + td['id'] + '...')
 
+            self.logger.debug('Setting token ' + td['channels']['telegram']['token'])
             self.set_api_token(td['channels']['telegram']['token'])
 
             # build webhook url
@@ -173,6 +174,7 @@ class Telegram:
 
             # check webhook current status (faster than overriding webhook)
             webhook_info = self.api.getWebhookInfo()
+            self.logger.debug('WebHookInfo: ' + str(webhook_info))
             webhook_notset = webhook_info['url'] == ''
             if webhook_info['url'] != url and not webhook_notset: # webhook url is set and wrong
                 self.logger.warning('Telegram webhook set is invalid (' + webhook_info['url'] + '). Deleting webhook...')
@@ -187,6 +189,7 @@ class Telegram:
             if webhook_notset: # webhook is not set
                 self.logger.info(f'Setting webhook for bot id ' + td['id'] + f' with webhook url {url}')
                 set_ret = self.api.setWebhook(url=url, certificate=cert_file)
+                self.logger.debug(set_ret)
                 if set_ret:
                     self.logger.info("Successfully set.")
                 else:

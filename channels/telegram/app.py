@@ -4,8 +4,9 @@ import logging.config
 import os
 import traceback
 from flask import Flask, request, jsonify
-from bbot.core import create_bot, ChatbotEngine, Plugin
+from bbot.core import BBotCore, ChatbotEngine, Plugin
 from bbot.config import load_configuration
+
 
 def create_app():
     """Create and configure an instance of the application."""
@@ -41,8 +42,8 @@ def create_app():
                 telegram_recv = telegram.get_message(params)
                 bbot_request = telegram.to_bbot_request(telegram_recv)
 
-                bbot = create_bot(config, dotbot)
-                req = ChatbotEngine.create_request(bbot_request, user_id, bot_id, org_id)
+                bbot = BBotCore.create_bot(config, dotbot)
+                req = bbot.create_request(bbot_request, user_id, bot_id, org_id)
                 bbot_response = bbot.get_response(req)
 
                 telegram.send_response(bbot_response)

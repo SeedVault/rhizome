@@ -39,7 +39,9 @@ def create_app():
             
             # if 'runBot' in params:
             #    run_bot = restful.params['runBot']
+            print('>>find dotbot by container')
             dotbotContainer = restful.dotdb.find_dotbot_by_container_id(bot_id)            
+            print('<<find dotbot by container')
             if not dotbotContainer:
                 raise Exception('Bot not found')
             restful.dotbot = dotbotContainer.dotbot # needed for methods below

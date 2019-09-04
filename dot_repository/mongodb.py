@@ -201,10 +201,16 @@ class DotRepository():
         :param filters: Dictionary with matching conditions.
         :return: DotBotContainer instance or None if not found.
         """
+        print('>>findone')
         result = self.mongo.dotbot.find_one(filters)
+        print('<<findone')
         if not result:
             return None
-        return self.marshall_dotbot(result)
+        print('>>marchall')
+        a = self.marshall_dotbot(result)
+        print('<<marchall')
+        return a
+
 
     def find_dotbot_by_container_id(self, container_id: str) -> DotBotContainer:
         """

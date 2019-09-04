@@ -23,6 +23,7 @@ boto3 = "*"
 jinja2 = "*"
 web3 = "*"
 bs4 = "*"
+telepot = "*"
 
 [dev-packages]
 pytest = "*"
