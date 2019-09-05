@@ -26,6 +26,7 @@ class Telegram:
             'audio': self.send_audio,
             'buttons': self.send_buttons
         }
+        self.default_text_encoding = 'HTML'
 
     def set_api_token(self, token: str):
         self.api = telepot.Bot(token)
@@ -67,7 +68,7 @@ class Telegram:
         """
         text = text['text']
         if type(text) is str and text:
-            self.api.sendMessage(self.user_id, text, parse_mode='Markdown')
+            self.api.sendMessage(self.user_id, text, parse_mode=self.default_text_encoding)
         else:
             self.logger.error("Trying to send empty message to Telegram")
 
@@ -82,7 +83,7 @@ class Telegram:
             if image.get('subtitle'):
                 caption += f"\n{image['subtitle']}"
 
-        self.api.sendPhoto(self.user_id, image['url'], caption=caption, parse_mode='Markdown',
+        self.api.sendPhoto(self.user_id, image['url'], caption=caption, parse_mode=self.default_text_encoding,
                            disable_notification=None, reply_to_message_id=None, reply_markup=None)
         
     def send_video(self, video: dict):
@@ -97,7 +98,7 @@ class Telegram:
                 caption += f"\n{video['subtitle']}"
 
         self.api.sendVideo(self.user_id, video['url'], duration=None, width=None, height=None,
-                           caption=caption, parse_mode='Markdown', supports_streaming=None, disable_notification=None, reply_to_message_id=None, reply_markup=None)
+                           caption=caption, parse_mode=self.default_text_encoding, supports_streaming=None, disable_notification=None, reply_to_message_id=None, reply_markup=None)
 
     def send_audio(self, audio: dict):
         """
@@ -112,7 +113,7 @@ class Telegram:
 
         #self.telegram.sendAudio(self.user_id, audio['uri'], caption=caption, parse_mode='Markdown', duration=None, performer=None,
         #   title="Title?", disable_notification=None, reply_to_message_id=None, reply_markup=None)
-        self.api.sendVoice(self.user_id, audio['url'], caption=caption, parse_mode='Markdown', duration=None,
+        self.api.sendVoice(self.user_id, audio['url'], caption=caption, parse_mode=self.default_text_encoding, duration=None,
                            disable_notification=None, reply_to_message_id=None, reply_markup=None)
 
     def send_buttons(self, buttons: dict):
