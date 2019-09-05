@@ -97,7 +97,7 @@ def create_app():
                     'error': {'traceback': str(traceback.format_exc())}
                     }
             else:
-                bbot_response = {'output': [{'text': 'An error happened. Please try agan later.'}]}
+                bbot_response = {'output': [{'text': 'An error happened. Please try again later.'}]}
                 # @TODO this should be configured in dotbot
                 # @TODO let bot engine decide what to do?
             

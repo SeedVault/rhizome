@@ -40,17 +40,28 @@ def create_app():
 
                 user_id = telegram.get_user_id(params)
                 telegram_recv = telegram.get_message(params)
+                logger.debug('POST data from Telegram: ' + str(params))
                 bbot_request = telegram.to_bbot_request(telegram_recv)
 
                 bbot = BBotCore.create_bot(config, dotbot)
+                logger.debug('User id: ' + user_id)
                 req = bbot.create_request(bbot_request, user_id, bot_id, org_id)
                 bbot_response = bbot.get_response(req)
 
                 telegram.send_response(bbot_response)
-        except Exception as e:
-            print("type error: " + str(e))
-            print(traceback.format_exc())
+        except Exception as e:           
+            logger.critical(str(e) + "\n" + str(traceback.format_exc()))            
+            if config['environment'] == 'development':
+                bbot_response = {
+                    'output': [{'text': str(e)}],
+                    'error': {'traceback': str(traceback.format_exc())}
+                    }
+            else:
+                bbot_response = {'output': [{'text': 'An error happened. Please try again later.'}]}
+                # @TODO this should be configured in dotbot
+                # @TODO let bot engine decide what to do?
 
+        telegram.send_response(bbot_response)
 
         # be sure to respond 200 code. telegram will keep sending it if doesnt get it
         return jsonify(success=True)
