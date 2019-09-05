@@ -47,8 +47,7 @@ def create_app():
                 logger.debug('User id: ' + user_id)
                 req = bbot.create_request(bbot_request, user_id, bot_id, org_id)
                 bbot_response = bbot.get_response(req)
-
-                telegram.send_response(bbot_response)
+                
         except Exception as e:           
             logger.critical(str(e) + "\n" + str(traceback.format_exc()))            
             if config['environment'] == 'development':
