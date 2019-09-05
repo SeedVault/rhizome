@@ -19,7 +19,7 @@ def create_app():
     logging.config.dictConfig(config['logging'])
     logger = logging.getLogger("channel_telegram")
 
-    @app.route('/channels/telegram/<bot_id>', methods=['POST'])
+    @app.route(telegram.get_webhook_path(), methods=['POST'])
     def rest(bot_id):                                       # pylint: disable=W0612
         """
         Telegram webhook endpoint.

@@ -1,6 +1,7 @@
 """."""
 import telepot
 import logging
+from urllib.parse import urlparse
 import logging.config
 
 
@@ -34,6 +35,13 @@ class Telegram:
 
     def to_bbot_request(self, request: str) -> str:
         return {'text': request}
+
+
+    def get_webhook_url(self) -> str:
+        return self.config['webhook_uri']
+
+    def get_webhook_path(self) -> str:
+        return urlparse(self.config['webhook_uri']).path
 
     ### Responses
 
@@ -158,6 +166,7 @@ class Telegram:
         telegram_dotbots_c = self.dotdb.find_dotbots_by_channel('telegram')
         if not telegram_dotbots_c:
             self.logger.debug('No telegram enabled bots')
+            return
 
         # cert file only used on local machines with self-signed certificate
         cert_file = open(self.config['cert_filename'], 'rb') if self.config.get('cert_filename') else None
@@ -171,7 +180,7 @@ class Telegram:
             self.set_api_token(td['channels']['telegram']['token'])
 
             # build webhook url
-            url = self.config['webhook_uri'].replace('{dotbotid}', td['id'])
+            url = self.get_webhook_url().replace('<bot_id>', td['id'])
 
             # check webhook current status (faster than overriding webhook)
             webhook_info = self.api.getWebhookInfo()
