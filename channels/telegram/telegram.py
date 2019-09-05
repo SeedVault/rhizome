@@ -132,11 +132,11 @@ class Telegram:
 
     def get_user_id(self, request: dict):
         if request.get('message'): #regular text
-            self.user_id = request['message']['from']['id']
+            self.user_id = str(request['message']['from']['id'])
             return self.user_id
 
         if request.get('callback_query'): # callback from a button click
-            return request['callback_query']['from']['id']
+            return str(request['callback_query']['from']['id'])
 
     def get_message(self, request: dict):
         if request.get('message'): #regular text
