@@ -273,6 +273,7 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
         self.dotbot = dotbot
         self.config = config
         self.user_id = ''
+        self.pub_id = ''
         self.logger_level = ''
         self.is_fallback = False
         self.bot_id = self.dotbot['id']        
