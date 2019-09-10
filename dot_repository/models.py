@@ -58,3 +58,20 @@ class DotFlowContainer():
         self.dotbot = DotBotContainer()  # DotBot
         self.createdAt = datetime.datetime.utcnow()
         self.updatedAt = datetime.datetime.utcnow()
+
+class RemoteAPI():
+    """Represent a RemoteAPI object."""
+
+    def __init__(self) -> None:
+        """Initialize values."""        
+        self.name = ''
+        self.category = None
+        self.function_name = ''
+        self.url = ''
+        self.method = ''
+        self.headers = []
+        self.timeout = 0,
+        self.user = '',
+        self.passwd = '',        
+        self.predefined_vars = []
+        self.mapped_vars = []

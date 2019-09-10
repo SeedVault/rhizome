@@ -4,7 +4,7 @@ import datetime
 from pymongo import MongoClient, ASCENDING
 from bson.objectid import ObjectId
 import bcrypt
-from .models import User, Organization, DotBotContainer, Token, DotFlowContainer, AuthenticationError
+from .models import User, Organization, DotBotContainer, Token, DotFlowContainer, AuthenticationError, RemoteAPI
 
 
 class DotRepository():
@@ -541,3 +541,42 @@ class DotRepository():
             if n.get('fieldId'):
                 fieldids.add(n['fieldId'])
         return list(fieldids)
+
+## REMOTE APIS
+
+    def marshall_remote_api(self, result) -> RemoteAPI:
+        """
+        Marshall a RemoteAPI.
+
+        :param result: A mongodb document representing a dotbot.
+        :return: DotBot instance
+        """
+        rapi = RemoteAPI()
+        rapi.name = result['name']
+        rapi.category = result['category']
+        rapi.function_name = result['function_name']
+        rapi.url = result['url']
+        rapi.method = result['method']
+        rapi.headers = result.get('headers', {})
+        rapi.predefined_vars = result.get('predefined_vars', {})
+        rapi.mapped_vars = result.get('mapped_vars', [])
+        rapi.cost = result['cost']
+        return rapi
+
+
+    def find_remote_api_by_id(self, remote_api_id) -> dict:
+        """
+        Retrieve a remote api doc
+        
+        """        
+        if isinstance(remote_api_id, str):
+            filter = {"_id": ObjectId(remote_api_id)}
+        else:
+            obj_ids = list(map(lambda x: ObjectId(x), remote_api_id))
+            filter = {"_id": {"$in": obj_ids}}
+
+        rapis = []        
+        results = self.mongo.remote_apis.find(filter)                
+        for result in results:            
+            rapis.append(self.marshall_remote_api(result))
+        return rapis

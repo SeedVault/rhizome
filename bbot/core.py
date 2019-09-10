@@ -222,6 +222,7 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         """
         return output
 
+    @staticmethod
     def get_all_texts_from_output(bbot_response: dict) -> str:
         """Returns all concatenated texts from a bbot response"""
         texts = ''
@@ -237,9 +238,9 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         Decorator to apply cache to extensions
         @TODO add ttl 5min
         """
-        def function_wrapper(self, args, f_type):
+        def function_wrapper(self, args, f_type):                        
             # key = botid_methodname_arg0_arg1_arg2
-            # adds args only if they are string, integer or boolean (avoiding nonhashagle values [even in nested values])
+            # adds args only if they are string, integer or boolean (avoiding nonhashable values [even in nested values])
             key = self.core.bot_id + "_" + func.__name__
             for arg in args:
                 if isinstance(arg, (str, int, bool)):
@@ -540,8 +541,9 @@ class BBotFunctionsProxy:
             if name in self.global_functions_map: # will throw exception if bot doesnt have functions map
                 return self.call_function(name, args, f_type)
             else:
-                self.core.logger.warning(
-                    'Tried to run function "' + name + '" but it\'s not registered')            
+                err_msg = 'Tried to run function "' + name + '" but it\'s not registered'
+                self.core.logger.debug(err_msg)            
+                raise BBotException(err_msg)
         
         return wrapper
 
@@ -564,9 +566,8 @@ class BBotFunctionsProxy:
         cost = fmap['cost']
         exception = None
 
-        try:
-            response = getattr(fmap['object'],
-                            fmap['method'])(args, f_type)
+        try:            
+            response = getattr(fmap['object'], fmap['method'])(args, f_type)            
         except BBotExtensionException as e:                
             exception = e # do not remove >> https://stackoverflow.com/questions/29268892/python-3-exception-deletes-variable-in-enclosing-scope-for-unknown-reason
             resp_code = e.code
@@ -592,7 +593,7 @@ class BBotFunctionsProxy:
                 'register_enabled': fmap['register_enabled'], 
                 'cost': cost # @TODO when function is cached in same process (funcion with same args is called multiple times in same volley) make cost 0
             })
-    
+        print(":code: " + str(resp_code))
         if resp_code == BBotCore.FNC_RESPONSE_OK:
             return response
         else:            
