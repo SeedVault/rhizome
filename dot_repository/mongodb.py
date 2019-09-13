@@ -581,12 +581,25 @@ class DotRepository():
             rapis.append(self.marshall_remote_api(result))
         return rapis
 
-    def get_watson_assistant_session(self, user_id: str):
+## WATSON ASSISTANT SESSION AND CONTEXT
 
+    def get_watson_assistant_session(self, user_id: str):
+        """
+        Returns user session id and context 
+
+        :param: user_id: A string with user id
+        :return: A dict
+        """
         r = self.mongo.watson_assistant_bot_data.find_one({'user_id': user_id})
         return r
 
     def set_watson_assistant_session(self, user_id: str, session_id: str, context: dict={}):
-        print(user_id)
+        """
+        Stores user session id and context
+
+        :param user_id: A string with user id
+        :param session_id: A string with session id
+        :param context: A dict with context
+        """
         self.mongo.watson_assistant_bot_data.update({'user_id': user_id}, {'user_id': user_id, 'session_id': session_id, 'context': context}, upsert = True)
         

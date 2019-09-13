@@ -1,6 +1,7 @@
 import logging
 from bbot.core import BBotCore, ChatbotEngine, ChatbotEngineError, BBotLoggerAdapter
 import ibm_watson
+import ibm_cloud_sdk_core
 
 class WatsonAssistant(ChatbotEngine):
     """
@@ -31,7 +32,7 @@ class WatsonAssistant(ChatbotEngine):
             url = self.dotbot['watsonassistant']['url'],
             version = '2019-02-28'
         )
-        self.logger.debug("Conexion: " + str(self.service))
+        self.logger.debug("Connection: " + str(self.service))
         
     def get_response(self, request: dict) -> dict:
         """
@@ -49,11 +50,16 @@ class WatsonAssistant(ChatbotEngine):
         session = self.get_bot_session(user_id)
         session_id = session['session_id']
 
-        response = self.service.message(
-            self.dotbot['watsonassistant']['assistantId'],
-            session_id,
-            input={'text': input_text}
-        ).get_result()
+        response = {}
+        try:
+            response = self.get_assistant_response(session_id, request['input'])
+        except ibm_cloud_sdk_core.api_exception.ApiException as e:  # This means we are trying to use an expired session 
+                                                                    # @TODO I don't know how to test this before. try to improve it.
+            # create a new session (but dont delete context!) and try again  
+            self.logger.debug('Session has timed out. Try to create a new one')
+            session = self.get_bot_session(user_id, True)
+            session_id = session['session_id']    
+            response = self.get_assistant_response(session_id, request['input'])
 
         self.logger.debug("Response: " + str(response))
 
@@ -64,15 +70,42 @@ class WatsonAssistant(ChatbotEngine):
 
         self.core.bbot.text(output)
 
-    def get_bot_session(self, user_id):
+    def get_assistant_response(self, session_id: str, rinput: dict):
+        """
+        Returns response from bot engine
 
-        session = self.dotdb.get_watson_assistant_session(user_id)        
-        if not session:                        
-            session_id = self.service.create_session(assistant_id = self.dotbot['watsonassistant']['assistantId']).get_result()['session_id']
-            session = {}
-            session['session_id'] = session_id
-            self.logger.debug("Created new session: " + session_id)
-            self.dotdb.set_watson_assistant_session(user_id, session_id, {})
-        else:
+        :param session_id: The session id
+        :param rinput: The request dict
+        :return: A dict 
+        """
+        return self.service.message(
+            self.dotbot['watsonassistant']['assistantId'],
+            session_id,
+            input={'text': rinput['text']}
+        ).get_result()
+
+    def get_bot_session(self, user_id: str, renew: bool=False):
+        """
+        Returns session data both session id and context
+        If there is no session on db we create one
+
+        :param user_id: A string with the user id
+        :param renew: A bool to indicate if we need to renew the session id (watson asisstant has a timeout and we have to get a new one when that happens)
+        :return: A dict 
+        """
+        session = self.dotdb.get_watson_assistant_session(user_id) or {'session_id': None, 'context': {}}
+
+        if session:
             self.logger.debug("Found old session: " + str(session))
+        
+        if renew:               
+            session['session_id'] = None
+
+        if not session.get('session_id'):                        
+            session_id = self.service.create_session(assistant_id = self.dotbot['watsonassistant']['assistantId']).get_result()['session_id']                            
+            session['session_id'] = session_id
+            self.logger.debug("Created new session: " + session_id)               
+            self.dotdb.set_watson_assistant_session(user_id, session_id, session['context']) # context might have data if we are renewing session
+                    
         return session
+
