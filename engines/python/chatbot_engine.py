@@ -31,9 +31,7 @@ class Python(ChatbotEngine):
         :return: A response to the input data.
         """        
         super().get_response(request)
-        
-        self.user_id = request['user_id']
-        
+                       
         pbot = Plugin.get_class_from_fullyqualified(
             'engines.python.bots.' + self.dotbot['python']['bot_class'] + '.PythonBot')
         pbot = pbot(self.config, self)        

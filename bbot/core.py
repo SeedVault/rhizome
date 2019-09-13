@@ -84,6 +84,8 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
     FNC_RESPONSE_OK = 1
     FNC_RESPONSE_ERROR = 0
 
+    bot_memory_repo = {}
+
     def __init__(self, config: dict, dotbot: dict) -> None:
         """
         Initialize the chatbot engine.
@@ -188,12 +190,18 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
                             "bbot.default_chatbot_engine" in configuration file.
         :return: Instance of BBotCore class.
         """
-        chatbot_engine = dotbot['chatbotEngine']
         
-        if chatbot_engine not in config['chatbot_engines']:
-            raise ChatbotEngineNotFoundError()
+        if dotbot['id'] in BBotCore.bot_memory_repo.keys():
+            print('Bot found in memory')
+            bbot = BBotCore.bot_memory_repo[dotbot['id']]
+        else:
+            chatbot_engine = dotbot['chatbotEngine']            
+            if chatbot_engine not in config['chatbot_engines']:
+                raise ChatbotEngineNotFoundError()
+            bbot = Plugin.load_plugin(config['bbot_core'], dotbot)  
 
-        bbot = Plugin.load_plugin(config['bbot_core'], dotbot)  
+            BBotCore.bot_memory_repo[dotbot['id']] = bbot # store in memory 
+
         bbot.environment = config['environment']         
         return bbot
 
@@ -272,16 +280,10 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
 
         self.dotbot = dotbot
         self.config = config
-        self.user_id = ''
-        self.pub_id = ''
-        self.logger_level = ''
-        self.is_fallback = False
-        self.bot_id = self.dotbot['id']        
-        self.request = {}  
-        self.response = {
-            'output': []           
-        }
+        
         self.logger = None        
+
+        self.reset()
         
         
     @abc.abstractmethod
@@ -289,6 +291,7 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
         """
         Get response based on the request
         """
+        self.reset()
         self.request = request
         self.user_id = request.get('user_id', '')
         self.pub_id = request.get('pub_id', '')
@@ -301,6 +304,17 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
         self.core = core
         self.bbot = core.bbot
     
+    def reset(self):
+        self.user_id = ''
+        self.pub_id = ''
+        self.logger_level = ''
+        self.is_fallback = False
+        self.bot_id = self.dotbot['id']        
+        self.request = {}  
+        self.response = {
+            'output': []           
+        }
+
     def add_output(self, bbot_output_obj: dict):
         """
         Adds a BBot output object to the output stream
