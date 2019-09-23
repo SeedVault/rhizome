@@ -67,11 +67,9 @@ class ActivityLogger():
         """
         if data['register_enabled'] is True:
             self.logger.debug('Registering function call activity: function name "' + data['name'])
-
-            rfc_data = {'fname': data['name']}
             
             if 'error_message' in data:
-                rfc_data['error_message'] = data['error_message']
+                data['error_message'] = data['error_message']
 
             self.register_activity({
                 'data': rfc_data, 

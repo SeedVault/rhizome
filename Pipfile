@@ -26,6 +26,7 @@ bs4 = "*"
 telepot = "*"
 dialogflow = "*"
 ibm-watson = "*"
+"web.py" = "==0.40.dev1"
 
 [dev-packages]
 pytest = "*"

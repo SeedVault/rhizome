@@ -20,9 +20,9 @@ services:
             - 1024:1024
         tty: true
         volumes:
-            - ./volumes/opt/ChatScript-master/LOGS:/opt/ChatScript-master/LOGS
-            - ./volumes/opt/ChatScript-master/TMP:/opt/ChatScript-master/TMP
-            - ./volumes/opt/ChatScript-master/USERS:/opt/ChatScript-master/USERS
+            - ./volumes/chatscript/LOGS:/opt/ChatScript-master/LOGS
+            - ./volumes/chatscript/TMP:/opt/ChatScript-master/TMP
+            - ./volumes/chatscript/USERS:/opt/ChatScript-master/USERS
     mongo:
         image: mongo
         networks:
@@ -36,13 +36,13 @@ services:
             - MONGO_INITDB_DATABASE=bbot
             - AUTH=yes
         volumes:
-            - ./volumes/data/db:/data/db
-            - ./volumes/var/log/mongodb:/var/log/mongodb
-            - ./volumes/home/mongodb:/home/mongodb
+            - ./volumes/mongodb/data/db:/data/db
+            - ./volumes/mongodb/var/log/mongodb:/var/log/mongodb
+            - ./volumes/mongodb/home/mongodb:/home/mongodb
             - ./seed:/seed
 
     mongo-express:
-        image: mongo-express
+        image: mongo-express        
         networks:
             - botanic_lan
         ports:
@@ -52,4 +52,24 @@ services:
             - ME_CONFIG_MONGODB_ADMINPASSWORD=
         depends_on:
             - mongo
-
+    parity:                
+        image: parity/parity:stable
+        ports:
+            #- 8080:8080
+            #- 8180:8180
+            - 8545:8545
+            - 8546:8546
+            - 30303:30303
+        networks:
+            - botanic_lan
+        user: root
+        working_dir: /home/parity
+        volumes:
+            - ./volumes/parity/deployment/chain/spec.json:/home/parity/spec.json:ro
+            - ./volumes/parity/deployment/chain/reserved_peers:/home/parity/reserved_peers:ro
+            - ./volumes/parity/deployment/chain/authcodes:/home/parity/data/authcodes
+            - ./volumes/parity/deployment/is_authority/password:/home/parity/password:ro
+            - ./volumes/parity/deployment/is_authority/authority.toml:/home/parity/authority.toml:ro
+            - ./volumes/parity/deployment/is_authority/${NETWORK_NAME}:/home/parity/data/keys/DevelopmentChain
+            - ./volumes/parity/data/is_authority:/home/parity/data
+        command: --config dev-insecure --tracing=on --jsonrpc-apis=all --jsonrpc-cors=all --ws-apis=all --ws-origins=all --ipc-apis=all --fat-db=on --pruning=archive --network-id=1010 -d /home/parity/data

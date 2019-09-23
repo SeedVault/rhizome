@@ -34,14 +34,18 @@ def rest():                                       # pylint: disable=W0612
         user_id = restful.params.get('userId')
         bot_id = restful.params.get('botId')
         org_id = restful.params.get('orgId')
-        pub_id = restful.params.get('pubId')
+        pub_token = restful.params.get('pubToken')        
         input_params = restful.params['input']
+        
+        # get publisher user id from token
+        pub_id = 'nicolastest' #@TODO
+
         
         # if 'runBot' in params:
         #    run_bot = restful.params['runBot']
-        print('>>find dotbot by container')
+        
         dotbotContainer = restful.dotdb.find_dotbot_by_container_id(bot_id)            
-        print('<<find dotbot by container')
+        
         if not dotbotContainer:
             raise Exception('Bot not found')
         restful.dotbot = dotbotContainer.dotbot # needed for methods below
@@ -96,7 +100,7 @@ def rest():                                       # pylint: disable=W0612
             pass # we should alert the botdev
         if config['environment'] == 'development':
             bbot_response = {
-                'output': [{'text': str(e)}],
+                'output': [{'text': str(e)}], #@TODO use bbot.text() 
                 'error': {'traceback': str(traceback.format_exc())}
                 }
         else:

@@ -12,10 +12,13 @@ class DotRepository():
 
     def __init__(self, config: dict, dotbot: dict=None) -> None:
         """Initialize the connection."""
+
+        self.connection_timeout = 5000
+
         if 'uri' not in config:
             raise RuntimeError("FATAL ERR: Missing config var uri")
         uri = config['uri']
-        client = MongoClient(uri)
+        client = MongoClient(uri, serverSelectionTimeoutMS=self.connection_timeout)
         parts = uri.split("/")
         last_part = parts.pop()
         parts = last_part.split("?")
@@ -48,6 +51,8 @@ class DotRepository():
         return dict([field, 1] for field in fields if len(field) > 0) if len(fields[0]) else None
 
 
+### ORGANIZATIONS (deprecated?)
+
     def create_organization(self, name: str) -> Organization:
         """
         Create a new organization.
@@ -79,6 +84,8 @@ class DotRepository():
         organization.id = str(result['_id'])
         organization.name = result['name']
         return organization
+
+### USERS/AUTH (deprecated?)
 
     def find_one_user(self, filters: dict) -> User:
         """
@@ -166,6 +173,9 @@ class DotRepository():
         """
         return self.find_one_user({"token": token})
 
+
+### DOTBOT
+
     def marshall_dotbot(self, result) -> DotBotContainer:
         """
         Marshall a dotbot.
@@ -201,16 +211,12 @@ class DotRepository():
         :param filters: Dictionary with matching conditions.
         :return: DotBotContainer instance or None if not found.
         """
-        print('>>findone')
+        
         result = self.mongo.dotbot.find_one(filters)
-        print('<<findone')
+        
         if not result:
             return None
-        print('>>marchall')
-        a = self.marshall_dotbot(result)
-        print('<<marchall')
-        return a
-
+        return self.marshall_dotbot(result)
 
     def find_dotbot_by_container_id(self, container_id: str) -> DotBotContainer:
         """

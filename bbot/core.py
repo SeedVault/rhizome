@@ -36,7 +36,7 @@ class Plugin(metaclass=abc.ABCMeta):
         :param plugin_settings: Dictionary with initialization data.
         :return: An instance of the class defined in plugin_settings
         """
-        print('Loading module ' + plugin_settings['plugin_class'])
+        #print('Loading module ' + plugin_settings['plugin_class'])
         plugin = Plugin.get_class_from_fullyqualified(plugin_settings['plugin_class'])(plugin_settings, dotbot)                
         for attr_name in vars(plugin):
             if attr_name in plugin_settings:
@@ -78,7 +78,9 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
     """Abstract base class for chatbot engines."""
 
     SIGNAL_GET_RESPONSE_AFTER = 'get_response_after'
+    SIGNAL_GET_RESPONSE_BEFORE = 'get_response_before'
     SIGNAL_CALL_BBOT_FUNCTION_AFTER = 'call_function_after'
+    SIGNAL_CALL_BBOT_FUNCTION_BEFORE = 'call_function_before'
     SIGNAL_TEMPLATE_RENDER = 'template_render'
 
     FNC_RESPONSE_OK = 1
@@ -158,12 +160,22 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         :return: A response to the input data.
         """
         
-        self.response = self.bot.response        
-        self.bot.get_response(request)             
-        self.process_pipeline()
-
-        smokesignal.emit(BBotCore.SIGNAL_GET_RESPONSE_AFTER, {'bbot_response': self.response})        
-
+        self.response = self.bot.response
+        self.request = request
+        self.bot.reset()        
+        self.bot.user_id = request.get('user_id', '')
+        self.bot.pub_id = request.get('pub_id', '')
+        
+        try:
+            smokesignal.emit(BBotCore.SIGNAL_GET_RESPONSE_BEFORE, {})
+            self.bot.get_response(request)      # get bot response           
+            self.process_pipeline()             # run pipelin process: this proces changes bot output
+            smokesignal.emit(BBotCore.SIGNAL_GET_RESPONSE_AFTER, {'bbot_response': self.response})  # triggers event: none of these should modify output
+        except BBotCoreHalt as e: # this exception is used to do a soft halt
+            self.logger.debug(e)  
+        #except BBotCoreError as e: # this exception sends exception msg to the bot output
+        #    self.bbot.text(e)
+        
         self.logger.debug('Response from bbot metaengine: ' + str(self.response))
         return self.response
 
@@ -176,8 +188,16 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
 
     def add_output(self, bbot_output_obj: dict):
         """      
+        Appends a new output object
         """
         self.response['output'].append(bbot_output_obj)
+
+    def reset_output(self):
+        """
+        Resets the output
+        """
+        self.logger.debug('Resetting output')
+        self.response['output'] = []
 
     @staticmethod
     def create_bot(config: dict, dotbot: dict={}):
@@ -291,10 +311,6 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
         """
         Get response based on the request
         """
-        self.reset()
-        self.request = request
-        self.user_id = request.get('user_id', '')
-        self.pub_id = request.get('pub_id', '')
         
     @abc.abstractmethod
     def init(self, core: BBotCore) -> None:
@@ -325,6 +341,9 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
         """
         self.response['output'].append(bbot_output_obj)
 
+
+class BBotCoreHalt(Exception):
+    """Used by Core to halt the bot when something happens and dont want to keep running with following execution"""
 
 class ChatbotEngineNotFoundError(Exception):
     """ChatbotEngine not found."""
@@ -359,73 +378,6 @@ class ChatbotEngineExtension():
     """Base class for extensions."""
     def __init__(self, config: dict, dotbot: dict) -> None:
         pass
-
-@Plugin.register
-class Extension(Plugin, metaclass=abc.ABCMeta):
-    """Abstract base class for extensions."""
-
-    @abc.abstractmethod
-    def __init__(self, config: dict) -> None:
-        """
-        Initialize the extension.
-
-        :param config: Configuration values for the instance.
-        """
-
-    @abc.abstractmethod
-    def init(self):
-        """        
-        """
-        
-    @abc.abstractmethod
-    def register_activity(self, function_name, response):
-        """        
-        """        
-
-
-@Plugin.register
-class ConfigReader(Plugin, metaclass=abc.ABCMeta):
-    """Abstract base class for configuration readers."""
-
-    @abc.abstractmethod
-    def __init__(self, config: dict) -> None:
-        """
-        Initialize the config reader.
-
-        :param config: Configuration values for the instance.
-        """
-        super(ConfigReader, self).__init__(config)
-
-
-    @abc.abstractmethod
-    def read(self) ->dict:
-        """
-        Return a dictionary with configuration settings.
-
-        :return: Configuration settings.
-        """
-        return {}
-
-@Plugin.register
-class TemplateEngine(Plugin, metaclass=abc.ABCMeta):
-    """Abstract base class for template engines."""
-
-    @abc.abstractmethod
-    def __init__(self, config: dict) -> None:
-        """
-        Initialize the template engine.
-
-        :param config: Configuration values for the instance.
-        """
-        super(TemplateEngine, self).__init__(config)
-
-
-    @abc.abstractmethod
-    def render(self) ->str:
-        """
-        Return a template rendered string.
-        """
-        return ""
 
 
 @Plugin.register
@@ -573,7 +525,7 @@ class BBotFunctionsProxy:
         """        
         self.core.logger.debug('Calling function "' + func_name + '" with args ' + str(args))
         fmap = self.global_functions_map[func_name]
-                       
+
         start = datetime.datetime.now()
         response = None
         resp_code = BBotCore.FNC_RESPONSE_OK
@@ -581,7 +533,9 @@ class BBotFunctionsProxy:
         cost = fmap['cost']
         exception = None
 
-        try:            
+        try:
+            smokesignal.emit(BBotCore.SIGNAL_CALL_BBOT_FUNCTION_BEFORE, {'name': func_name, 'args': args}) 
+
             response = getattr(fmap['object'], fmap['method'])(args, f_type)            
         except BBotExtensionException as e:                
             exception = e # do not remove >> https://stackoverflow.com/questions/29268892/python-3-exception-deletes-variable-in-enclosing-scope-for-unknown-reason
@@ -602,13 +556,13 @@ class BBotFunctionsProxy:
                         
         smokesignal.emit(BBotCore.SIGNAL_CALL_BBOT_FUNCTION_AFTER, 
             {
-                'name': func_name, 
+                'name': func_name,                 
                 'response_code': resp_code,                 
                 'error_message': error_message,
                 'register_enabled': fmap['register_enabled'], 
-                'cost': cost # @TODO when function is cached in same process (funcion with same args is called multiple times in same volley) make cost 0
+                'data': fmap
             })
-        print(":code: " + str(resp_code))
+        
         if resp_code == BBotCore.FNC_RESPONSE_OK:
             return response
         else:            

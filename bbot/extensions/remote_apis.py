@@ -20,10 +20,7 @@ class RemoteAPIs():
         self.dotdb = None
 
         self.core = None
-        self.logger = None
-
         
-
     def init(self, core: BBotCore):
         """
 
