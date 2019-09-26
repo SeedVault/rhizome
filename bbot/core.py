@@ -310,6 +310,12 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
         """
         Get response based on the request
         """
+        self.reset()
+        self.request = request
+        self.user_id = request.get('user_id', '')
+        self.pub_id = request.get('pub_id', '')
+         
+
         
     @abc.abstractmethod
     def init(self, core: BBotCore) -> None:
