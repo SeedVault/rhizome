@@ -23,7 +23,8 @@ class TTSAmazonPolly():
 
         # https://docs.aws.amazon.com/polly/latest/dg/voices-in-polly.html
         self.voice_id_locale_map = {
-            'en_US': ['Joanna', 'Ivy', 'Kendra', 'Kimberly', 'Salli', 'Joey', 'Justin', 'Matthew']
+            'en_US': ['Joanna', 'Ivy', 'Kendra', 'Kimberly', 'Salli', 'Joey', 'Justin', 'Matthew'],
+            'en_GB': ['Emma', 'Amy', 'Brian']
         }
 
         self.logger = BBotLoggerAdapter(logging.getLogger('tts'), self, self, 'tts')        
