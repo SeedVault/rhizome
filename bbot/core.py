@@ -131,7 +131,7 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         config_path = os.path.abspath(os.path.dirname(__file__) + "/../instance")
         config = load_configuration(config_path, "BBOT_ENV")
         
-        self.bot = Plugin.load_plugin(config["chatbot_engines"][self.dotbot['chatbotEngine']], self.dotbot, self)               
+        self.bot = Plugin.load_plugin(config["chatbot_engines"][self.dotbot['chatbotEngine']['type']], self.dotbot, self)               
         self.logger = BBotLoggerAdapter(logging.getLogger('core'), self, self.bot, 'core')        
         self.bot.core = self
 
@@ -214,9 +214,8 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         if dotbot['id'] in BBotCore.bot_memory_repo.keys():
             print('Bot found in memory')
             bbot = BBotCore.bot_memory_repo[dotbot['id']]
-        else:
-            chatbot_engine = dotbot['chatbotEngine']            
-            if chatbot_engine not in config['chatbot_engines']:
+        else:            
+            if dotbot['chatbotEngine']['type'] not in config['chatbot_engines']:
                 raise ChatbotEngineNotFoundError()
             bbot = Plugin.load_plugin(config['bbot_core'], dotbot)  
 

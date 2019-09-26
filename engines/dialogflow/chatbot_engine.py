@@ -26,7 +26,7 @@ class DialogFlow(ChatbotEngine):
 
         self.logger = BBotLoggerAdapter(logging.getLogger('dialogfl_cbe'), self, self.core)
 
-        credentials = Credentials.from_service_account_info(self.dotbot['dialogflow']['serviceAccount'])
+        credentials = Credentials.from_service_account_info(self.dotbot['chatbotEngine']['serviceAccount'])
         self.session_client = dialogflow.SessionsClient(credentials=credentials)
         
     def get_response(self, request: dict) -> dict:
@@ -52,7 +52,7 @@ class DialogFlow(ChatbotEngine):
         of the conversaion.
         """
                 
-        session = self.session_client.session_path(self.dotbot['dialogflow']['serviceAccount']['project_id'], session_id)
+        session = self.session_client.session_path(self.dotbot['chatbotEngine']['serviceAccount']['project_id'], session_id)
         
         text_input = dialogflow.types.TextInput(
             text=input_text, language_code=language_code)
