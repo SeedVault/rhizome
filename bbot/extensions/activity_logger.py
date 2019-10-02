@@ -61,7 +61,7 @@ class ActivityLogger():
             'cost': self.dotbot.per_use_cost
             })
 
-    def register_function_call(self, data):
+    def register_function_call(self, data):        
         """
         Register each function call
         """
@@ -72,10 +72,10 @@ class ActivityLogger():
                 data['error_message'] = data['error_message']
 
             self.register_activity({
-                'data': rfc_data, 
+                'data': '', #@TDODO to define
                 'type': self.ACTIVITY_TYPE_FUNCTION, 
                 'code': data['response_code'],
-                'cost': data['cost']})        
+                'cost': data['data']['cost']})        
 
     def register_activity(self, data):
         """
@@ -91,8 +91,8 @@ class ActivityLogger():
             'pubId': self.core.bot.pub_id,
             "cost": data['cost']
         }
-        if data.get('data') is not None:
-            doc = {**doc, **data['data']}
+        #if data.get('data') is not None:
+        #    doc = {**doc, **data['data']}
 
         self.mongo.activity.insert(doc)
 

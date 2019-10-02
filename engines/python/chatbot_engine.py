@@ -33,7 +33,7 @@ class Python(ChatbotEngine):
         super().get_response(request)
                        
         pbot = Plugin.get_class_from_fullyqualified(
-            'engines.python.bots.' + self.dotbot['python']['bot_class'] + '.PythonBot')
+            'engines.python.bots.' + self.dotbot.chatbot_engine['bot_class'] + '.PythonBot')
         pbot = pbot(self.config, self)        
         pbot.get_response(request)
         

@@ -29,6 +29,7 @@ logger = logging.getLogger("channel_restful")
 @cross_origin(supports_credentials=True)
 def rest():                                       # pylint: disable=W0612
     try:
+        print('--------------------------------------------------------------------------------------------------------------------------------')
         restful.params = request.get_json(force=True)
         logger.debug("Received request:" + str(restful.params))
         user_id = restful.params.get('userId')

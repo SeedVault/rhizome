@@ -94,21 +94,21 @@ class TokenManager():
         if data['register_enabled'] is True:
             self.logger.debug('Paying function activity: ' + str(data))        
 
-            if data['data'].get('suscriptionType') == TokenManager.SUSCRIPTION_TYPE_FREE:
+            if data['data'].get('suscription_type') == TokenManager.SUSCRIPTION_TYPE_FREE:
                 self.logger.debug('Free suscription. No payment needed.')
                 return
-            if data['data'].get('suscriptionType') == TokenManager.SUSCRIPTION_TYPE_MONTHLY:
+            if data['data'].get('suscription_type') == TokenManager.SUSCRIPTION_TYPE_MONTHLY:
                 self.logger.debug('Monthly suscription. No payment needed.')
                 return
 
             # get service owner user id form function name
-            service_owner_id = 'midas' #@TODO
+            service_owner_id = data['data']['owner_id']
             if self.dotbot.owner_id == service_owner_id:
-                self.logger.debug('Bot owner is at the same time the service owner. Payment cancelled.')
+                self.logger.debug('Bot owner is at the same time the service owner. No payment needed.')
                 return True
 
             try:
-                self.token_manager.transfer(self.core.bot.dotbot['ownerName'], service_owner_id, data['data']['cost'])
+                self.token_manager.transfer(self.dotbot.owner_id, service_owner_id, data['data']['cost'])
             except TokenManagerInsufficientFundsException as e:
                 self.insufficient_funds()
 

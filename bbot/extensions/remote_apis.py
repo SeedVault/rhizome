@@ -31,16 +31,18 @@ class RemoteAPIs():
         self.logger = BBotLoggerAdapter(logging.getLogger('ext.r_services'), self, self.core.bot, '$call_api')                
 
         # get services for the bot    
-        services = self.get_bot_services()
+        services = self.get_bot_services()        
         for serv in services:
             self.logger.debug('Register service ' + serv['name'])
             core.register_function(serv['function_name'], {
-                'object': self, 
+                'object': self,         
                 'method': serv['function_name'], 
+                'owner_id': serv['ownerName'],
                 'url': serv['url'],
                 'request_method': serv['method'],
                 'timeout': serv['timeout'],
                 'cost': serv['cost'], 
+                'subscription_type': serv['subscriptionType'],
                 'predefined_vars': serv['predefined_vars'],
                 'headers': serv['headers'], 
                 'user': serv.get('user'),
@@ -55,6 +57,7 @@ class RemoteAPIs():
             def function(*args,**kwargs):                               
                 r_api_data = self.core.functions_map[fname]
                 self.logger.debug('Calling remote API ' + fname + ' args: ' + str(args) + ' - metadata: ' + str(r_api_data))        
+                auth = None
                 if r_api_data.get('user'):
                         auth = (r_api_data['user'], r_api_data['passwd'])
 
@@ -66,7 +69,7 @@ class RemoteAPIs():
                         params[mv] = self.core.resolve_arg(args[c])        
                         c += 1
                     except IndexError:
-                        raise BBotException({'code': 250, 'function': fname, 'arg': c, 'message': 'Parameter ' + c +  ' is missing'})
+                        raise BBotException({'code': 250, 'function': fname, 'arg': c, 'message': 'Parameter ' + str(c) +  ' is missing'})
                 
                 params = {**params, **r_api_data['predefined_vars']}
 
