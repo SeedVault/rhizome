@@ -162,25 +162,25 @@ class Telegram:
         This will check and start all webhooks for telegram enabled bots
         """
 
-        # get al telegram enabled bots
-        telegram_dotbots_c = self.dotdb.find_dotbots_by_channel('telegram')
-        if not telegram_dotbots_c:
+        # get all telegram enabled bots
+        telegram_pubbots = self.dotdb.find_publisherbots_by_channel('telegram')
+        
+        if not telegram_pubbots:
             self.logger.debug('No telegram enabled bots')
             return
 
         # cert file only used on local machines with self-signed certificate
         cert_file = open(self.config['cert_filename'], 'rb') if self.config.get('cert_filename') else None
 
-        for tdc in telegram_dotbots_c:
-            td = tdc.dotbot
+        for tpb in telegram_pubbots:
+            
+            self.logger.debug('Checking Telegram webhook for publisher id ' + tpb.publisher_id + ' publisher token: ' + tpb.token + ' - bot id: ' + tpb.bot_id + '...')
 
-            self.logger.debug('Checking Telegram webhook for botid ' + td['id'] + '...')
-
-            self.logger.debug('Setting token ' + td['channels']['telegram']['token'])
-            self.set_api_token(td['channels']['telegram']['token'])
+            self.logger.debug('Setting token ' + tpb.channels['telegram']['token'])
+            self.set_api_token(tpb.channels['telegram']['token'])
 
             # build webhook url
-            url = self.get_webhook_url().replace('<bot_id>', td['id'])
+            url = self.get_webhook_url().replace('<publisherbot_token>', tpb.token)
 
             # check webhook current status (faster than overriding webhook)
             webhook_info = self.api.getWebhookInfo()
@@ -197,9 +197,9 @@ class Telegram:
                     raise Exception(error)
                 webhook_notset = True
             if webhook_notset: # webhook is not set
-                self.logger.info(f'Setting webhook for bot id ' + td['id'] + f' with webhook url {url}')
+                self.logger.info(f'Setting webhook for bot id ' + tpb.bot_id + f' with webhook url {url}')
                 set_ret = self.api.setWebhook(url=url, certificate=cert_file)
-                self.logger.debug(set_ret)
+                self.logger.debug("setWebHook response: " + str(set_ret))
                 if set_ret:
                     self.logger.info("Successfully set.")
                 else:

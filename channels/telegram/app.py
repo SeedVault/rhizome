@@ -19,12 +19,15 @@ def create_app():
     logging.config.dictConfig(config['logging'])
     logger = logging.getLogger("channel_telegram")
 
+    logger.debug("Listening Telegram from path: " + telegram.get_webhook_path())
+
     @app.route(telegram.get_webhook_path(), methods=['POST'])
-    def rest(bot_id):                                       # pylint: disable=W0612
+    def rest(publisherbot_token):                                       # pylint: disable=W0612
         """
         Telegram webhook endpoint.
         """
-        logger.debug(f'Received a Telegram webhook request for botid {bot_id}')
+        print('------------------------------------------------------------------------------------------------------------------------')
+        logger.debug(f'Received a Telegram webhook request for publisher token {publisherbot_token}')
 
         try:
             params = request.get_json(force=True)
@@ -32,10 +35,28 @@ def create_app():
 
             # checks if bot is telegram enabled
             # if not, it delete the webhook and throw an exception
-            enabled = webhook_check(bot_id)
+            enabled = webhook_check(publisherbot_token)
             if enabled:
-                dotbot = telegram.dotdb.find_dotbot_by_container_id(bot_id).dotbot
-                token = dotbot['channels']['telegram']['token']
+                # get publisher user id from token
+                pub_bot = telegram.dotdb.find_publisherbot_by_publisher_token(publisherbot_token)
+                if not pub_bot:
+                    raise Exception('Publisher not found')
+                logger.debug('Found publisher: ' + pub_bot.publisher_id + ' - for bot id: ' + pub_bot.bot_id)
+                pub_id = pub_bot.publisher_id
+                
+                # if 'runBot' in params:
+                #    run_bot = telegram.params['runBot']
+            
+                dotbot = telegram.dotdb.find_dotbot_by_id(pub_bot.bot_id)                    
+                if not dotbot:
+                    raise Exception('Bot not found')
+                bot_id = dotbot.id
+                # build extended dotbot 
+                dotbot.services = pub_bot.services
+                dotbot.channels = pub_bot.channels
+                dotbot.publisher = pub_bot
+                
+                token = pub_bot.channels['telegram']['token']
                 telegram.set_api_token(token)
 
                 user_id = telegram.get_user_id(params)
@@ -45,7 +66,7 @@ def create_app():
 
                 bbot = BBotCore.create_bot(config, dotbot)
                 logger.debug('User id: ' + user_id)
-                req = bbot.create_request(bbot_request, user_id, bot_id, org_id)
+                req = bbot.create_request(bbot_request, user_id, bot_id, org_id, pub_id)                           
                 bbot_response = bbot.get_response(req)
                 
         except Exception as e:           
@@ -66,15 +87,15 @@ def create_app():
         return jsonify(success=True)
 
 
-    def webhook_check(bot_id):
+    def webhook_check(publisherbot_token):
 
-        dotbot = telegram.dotdb.find_dotbot_by_container_id(bot_id).dotbot
+        pb = telegram.dotdb.find_publisherbot_by_publisher_token(publisherbot_token)
 
-        if dotbot['channels']['telegram']['enabled']:
+        if pb.channels.get('telegram'):
             return True
 
-        logger.warning(f'Deleting invalid Telegram webhook for botid {bot_id}')
-        telegram.set_api_token(dotbot['channels']['telegram']['token'])
+        logger.warning(f'Deleting invalid Telegram webhook for publisher bot token: {publisherbot_token} - publisher id: ' + pb.publisher_id)
+        telegram.set_api_token(pb.channels['telegram']['token'])
         delete_ret = telegram.api.deleteWebhook()
         if delete_ret:
             logger.warning("Successfully deleted.")
@@ -85,6 +106,10 @@ def create_app():
             logger.error(error)
             raise Exception(error)
 
+    @app.route('/ping')
+    def test():                                     # pylint: disable=W0612
+        logger.debug('Received ping request ')
+        return "pong!\n"
 
     return app
 

@@ -191,7 +191,7 @@ class DotRepository():
         dotbot_container.updatedAt = result['updatedAt']
         return dotbot_container
 
-    def find_dotbots(self, filters: dict) -> list:
+    def find_dotbot_containers(self, filters: dict) -> list:
         """
         Retrieve a list of dotbots.
 
@@ -244,7 +244,7 @@ class DotRepository():
         :return: DotBot intance list
         """
 
-        return self.find_dotbots({'dotbot.channels.' + channel + '.enabled': True})
+        return self.find_dotbot_containers({'dotbot.channels.' + channel + '.enabled': True})
 
     def create_dotbot(self, dotbot: dict, organization: Organization) -> DotBotContainer:
         """
@@ -349,6 +349,19 @@ class DotRepository():
             return None
         return self.marshall_dotbot(result)
 
+    def find_dotbots(self, filters: dict) -> list:
+        """
+        Retrieve a list of dotbots.
+
+        :param filters: Dictionary with matching conditions.
+        :return: List of dotbots
+        """
+        results = self.mongo.greenhouse_dotbots.find(filters)
+        dotbots = []
+        for result in results:
+            dotbots.append(self.marshall_dotbot(result))
+        return dotbots
+
     def find_dotbot_by_id(self, bot_id: str) -> DotBot:
         return self.find_one_dotbot({'name': bot_id})
 
@@ -356,6 +369,10 @@ class DotRepository():
 
     def find_publisherbot_by_publisher_token(self, pub_token: str):
         return self.find_one_publisherbot({'token': pub_token})
+
+    def find_publisherbots_by_channel(self, channel: str) -> list:    
+        field = 'channels.' + channel
+        return self.find_publisherbots({field: {'$exists': True}})
 
     def find_one_publisherbot(self, filters: dict) -> PublisherBot:
         """
@@ -369,6 +386,17 @@ class DotRepository():
         if not result:
             return None
         return self.marshall_publisherbot(result)
+
+    def find_publisherbots(self, filters: dict) -> list:        
+        print(filters)
+        results = self.mongo.greenhouse_publisher_bot.find(filters)
+        publisherbots = []
+        for result in results:
+            publisherbots.append(self.marshall_publisherbot(result))
+        return publisherbots
+
+    def find_dotbot_by_id(self, bot_id: str) -> DotBot:
+        return self.find_one_dotbot({'name': bot_id})
 
     def marshall_publisherbot(self, result) -> PublisherBot:
         pub_bot = PublisherBot()
