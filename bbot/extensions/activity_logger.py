@@ -58,7 +58,7 @@ class ActivityLogger():
         self.register_activity({
             'type': self.ACTIVITY_TYPE_VOLLEY, 
             'code': BBotCore.FNC_RESPONSE_OK,
-            'cost': self.dotbot.get('volleyCost', 0)            
+            'cost': self.dotbot.per_use_cost
             })
 
     def register_function_call(self, data):

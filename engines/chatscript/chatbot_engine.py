@@ -38,22 +38,23 @@ class ChatScript(ChatbotEngine):
         self.request = request
 
         input_text = request['input']['text']
+        chatbot_engine = self.dotbot.chatbot_engine
 
-        cs_bot_id = self.dotbot['chatbotEngine']['botId']
+        cs_bot_id = chatbot_engine['botId']
         self.logger.debug('Request received for bot id "' + cs_bot_id + '" with text: "' + str(input_text) + '"')
 
         if not input_text:
             input_text = " " # at least one space, as per the required protocol
         msg_to_send = str.encode(u'%s\u0000%s\u0000%s\u0000' %
-                                 (request["user_id"], self.dotbot['chatbotEngine']['botId'], input_text))
+                                 (request["user_id"], chatbot_engine['botId'], input_text))
         response = {} # type: dict
-        self.logger.debug("Connecting to chatscript server host: " + self.dotbot['chatbotEngine']['host'] + " - port: " + str(self.dotbot['chatbotEngine']['port']) + " - botid: " + self.dotbot['chatbotEngine']['botId'])
+        self.logger.debug("Connecting to chatscript server host: " + chatbot_engine['host'] + " - port: " + str(chatbot_engine['port']) + " - botid: " + chatbot_engine['botId'])
         try:
             # Connect, send, receive and close socket. Connections are not
             # persistent
             connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             connection.settimeout(10)  # in secs
-            connection.connect((self.dotbot['chatbotEngine']['host'], self.dotbot['chatbotEngine']['port']))            
+            connection.connect((chatbot_engine['host'], chatbot_engine['port']))            
             connection.sendall(msg_to_send)
             msg = ''
             while True:

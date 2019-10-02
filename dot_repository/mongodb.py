@@ -4,7 +4,7 @@ import datetime
 from pymongo import MongoClient, ASCENDING
 from bson.objectid import ObjectId
 import bcrypt
-from .models import User, Organization, DotBotContainer, Token, DotFlowContainer, AuthenticationError, RemoteAPI
+from .models import User, Organization, DotBotContainer, DotBot, PublisherBot, Token, DotFlowContainer, AuthenticationError, RemoteAPI
 
 
 class DotRepository():
@@ -174,14 +174,14 @@ class DotRepository():
         return self.find_one_user({"token": token})
 
 
-### DOTBOT
+### DOTBOTCONTAINER
 
-    def marshall_dotbot(self, result) -> DotBotContainer:
+    def marshall_dotbot_container(self, result) -> DotBotContainer:
         """
-        Marshall a dotbot.
+        Marshall a dotbotcontainer.
 
         :param result: A mongodb document representing a dotbot.
-        :return: DotBot instance
+        :return: DotBotContainer instance
         """
         dotbot_container = DotBotContainer()
         dotbot_container.dotbot = result['dotbot']
@@ -201,12 +201,12 @@ class DotRepository():
         results = self.mongo.dotbot.find(filters)
         dotbots = []
         for result in results:
-            dotbots.append(self.marshall_dotbot(result))
+            dotbots.append(self.marshall_dotbot_container(result))
         return dotbots
 
-    def find_one_dotbot(self, filters: dict) -> DotBotContainer:
+    def find_one_dotbot_container(self, filters: dict) -> DotBotContainer:
         """
-        Retrieve a dotbot by filters.
+        Retrieve a dotbotContainer by filters.
 
         :param filters: Dictionary with matching conditions.
         :return: DotBotContainer instance or None if not found.
@@ -216,25 +216,25 @@ class DotRepository():
         
         if not result:
             return None
-        return self.marshall_dotbot(result)
+        return self.marshall_dotbot_container(result)
 
-    def find_dotbot_by_container_id(self, container_id: str) -> DotBotContainer:
+    def find_dotbot_container_by_container_id(self, container_id: str) -> DotBotContainer:
         """
         Retrieve a dotbot by its container ID.
 
         :param container_id: DotBot container ID
         :return: DotBotContainer instance or None if not found.
         """
-        return self.find_one_dotbot({"_id": ObjectId(str(container_id))})
+        return self.find_one_dotbot_container({"_id": ObjectId(str(container_id))})
 
-    def find_dotbot_by_idname(self, dotbot_idname: str) -> DotBotContainer:
+    def find_dotbot_container_by_idname(self, dotbot_idname: str) -> DotBotContainer:
         """
         Retrieve a dotbot by its id or name.
 
         :param dotbot_idname: DotBot id or name
         :return: DotBot instance or None if not found.
         """
-        return self.find_one_dotbot({'$or': [{'dotbot.id': dotbot_idname}, {'dotbot.name': dotbot_idname}]})
+        return self.find_one_dotbot_container({'$or': [{'dotbot.id': dotbot_idname}, {'dotbot.name': dotbot_idname}]})
 
     def find_dotbots_by_channel(self, channel: str) -> list:
         """
@@ -267,7 +267,7 @@ class DotRepository():
             'updatedAt': datetime.datetime.utcnow()
         }
         self.mongo.dotbot.insert_one(param)
-        return self.find_dotbot_by_container_id(oid)
+        return self.find_dotbot_container_by_container_id(oid)
 
     def update_dotbot_by_container_id(self, container_id: str, dotbot: dict) -> DotBotContainer:
         """
@@ -282,7 +282,7 @@ class DotRepository():
                                          "dotbot": dotbot,
                                          "updatedAt": datetime.datetime.utcnow()
                                      }})
-        return self.find_dotbot_by_container_id(container_id)
+        return self.find_dotbot_container_by_container_id(container_id)
 
     def update_dotbot_by_idname(self, dotbot_idname: str, dotbot: dict) -> DotBotContainer:
         """
@@ -297,7 +297,7 @@ class DotRepository():
                                          "dotbot": dotbot,
                                          "updatedAt": datetime.datetime.utcnow()
                                      }})
-        return self.find_dotbot_by_idname(dotbot_idname)
+        return self.find_dotbot_container_by_idname(dotbot_idname)
 
     def delete_dotbot_by_container_id(self, container_id: str) -> None:
         """
@@ -318,6 +318,68 @@ class DotRepository():
                                      {"$set": {"deleted": 1, "updatedAt": datetime.datetime.utcnow()}})
 
 
+    ### DOTBOT
+
+    def marshall_dotbot(self, result) -> DotBot:
+        """
+        Marshall a dotbot.
+
+        :param result: A mongodb document representing a dotbot.
+        :return: DotBot instance
+        """
+        dotbot = DotBot()
+        dotbot.owner_id = result['ownerName']
+        dotbot.id = result['name']
+        dotbot.title = result['title']        
+        dotbot.chatbot_engine = result['chatbotEngine']
+        dotbot.per_use_cost = result['perUseCost']
+        dotbot.per_month_cost = result['perMonthCost']
+        dotbot.updated_at = result['updatedAt']
+        return dotbot
+
+    def find_one_dotbot(self, filters: dict) -> DotBot:
+        """
+        Retrieve a dotbot by filters.
+
+        :param filters: Dictionary with matching conditions.
+        :return: DotBot instance or None if not found.
+        """       
+        result = self.mongo.greenhouse_dotbot.find_one(filters)        
+        if not result:
+            return None
+        return self.marshall_dotbot(result)
+
+    def find_dotbot_by_id(self, bot_id: str) -> DotBot:
+        return self.find_one_dotbot({'name': bot_id})
+
+    ### publisher_bot
+
+    def find_publisherbot_by_publisher_token(self, pub_token: str):
+        return self.find_one_publisherbot({'token': pub_token})
+
+    def find_one_publisherbot(self, filters: dict) -> PublisherBot:
+        """
+        Retrieve a publisherbot by filters.
+
+        :param filters: Dictionary with matching conditions.
+        :return: PublisherBot instance or None if not found.
+        """    
+        result = self.mongo.greenhouse_publisher_bot.find_one(filters)
+        
+        if not result:
+            return None
+        return self.marshall_publisherbot(result)
+
+    def marshall_publisherbot(self, result) -> PublisherBot:
+        pub_bot = PublisherBot()
+        pub_bot.token = result['token']
+        pub_bot.publisher_id = result['publisherName']
+        pub_bot.bot_id = result['botName']
+        pub_bot.subscription_type = result['subscriptionType']
+        pub_bot.updated_at = result['updatedAt']
+        pub_bot.channels = result['channels']
+        pub_bot.services = result['services']
+        return pub_bot
 
     ### DOTFLOWS
 
@@ -330,7 +392,7 @@ class DotRepository():
         """
         dotflow_container = DotFlowContainer()
         if result.get('dotflow'): dotflow_container.dotflow = result['dotflow']
-        if result.get('dotbotId'): dotflow_container.dotbot = self.find_dotbot_by_idname(result['dotbotId'])
+        if result.get('dotbotId'): dotflow_container.dotbot = self.find_dotbot_container_by_idname(result['dotbotId'])
         if result.get('createdAt'): dotflow_container.createdAt = result['createdAt']
         if result.get('updatedAt'): dotflow_container.updatedAt = result['updatedAt']
         return dotflow_container
@@ -415,7 +477,7 @@ class DotRepository():
         :return: List of DotFlowContainer objects
         """
         # we don't know if it's id or name. retrieve dotbot anyway to get id by id or name
-        dotbot_container = self.find_dotbot_by_idname(dotbot_idname)
+        dotbot_container = self.find_dotbot_container_by_idname(dotbot_idname)
 
         query = {'dotbotId': dotbot_container.dotbot['id']}
         projection = DotRepository.get_projection_from_fields(fields)

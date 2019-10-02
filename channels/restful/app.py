@@ -38,18 +38,26 @@ def rest():                                       # pylint: disable=W0612
         input_params = restful.params['input']
         
         # get publisher user id from token
-        pub_id = 'nicolastest' #@TODO
-
+        pub_bot = restful.dotdb.find_publisherbot_by_publisher_token(pub_token)
+        if not pub_bot:
+            raise Exception('Publisher not found')
+        logger.debug('Found publisher: ' + pub_bot.publisher_id + ' - for bot id: ' + pub_bot.bot_id)
+        pub_id = pub_bot.publisher_id
         
         # if 'runBot' in params:
         #    run_bot = restful.params['runBot']
-        
-        dotbotContainer = restful.dotdb.find_dotbot_by_container_id(bot_id)            
-        
-        if not dotbotContainer:
+       
+        dotbot = restful.dotdb.find_dotbot_by_id(pub_bot.bot_id)                    
+        if not dotbot:
             raise Exception('Bot not found')
-        restful.dotbot = dotbotContainer.dotbot # needed for methods below
-        bot = BBotCore.create_bot(config, dotbotContainer.dotbot)
+        bot_id = dotbot.id
+        # build extended dotbot 
+        dotbot.services = pub_bot.services
+        dotbot.channels = pub_bot.channels
+        dotbot.publisher = pub_bot
+
+        restful.dotbot = dotbot # needed for methods below
+        bot = BBotCore.create_bot(config, dotbot)
         input_text = ""
         #for input_type, input_value in input_params.items():
             # bot.get_response(input_type, input_value)

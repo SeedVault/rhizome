@@ -195,8 +195,8 @@
                 <input type="text" class="form-control" id="url" name="url" value="http://localhost:5000/restful_channel">
               </div>
               <div class="form-group">
-                <label for="pub_id" class="col-form-label">Pub ID:</label>
-                <input type="text" class="form-control" id="pub_id" name="pub_id" value="">
+                <label for="pub_token" class="col-form-label">Pub token:</label>
+                <input type="text" class="form-control" id="pub_token" name="pub_token" value="">
               </div>
               <div class="form-group">
                 <label for="bot_id" class="col-form-label">Bot ID:</label>
@@ -283,7 +283,7 @@
         e.preventDefault();
         var data = {
           'orgId': 1,
-          'pubId': $('#pub_id').val(),
+          'pubToken': $('#pub_token').val(),
           'botId': $('#bot_id').val(),
           'userId': $('#user_id').val(),
           'input': {

@@ -38,7 +38,7 @@ class AuthenticationError(Exception):
 
 
 class DotBotContainer():
-    """Represent a DotBot container object."""
+    """Represent a DotBotContainer object."""
 
     def __init__(self) -> None:
         """Initialize values."""
@@ -48,6 +48,31 @@ class DotBotContainer():
         self.createdAt = datetime.datetime.utcnow()
         self.updatedAt = datetime.datetime.utcnow()
 
+class DotBot():
+    """Represent a DotBot container object."""
+
+    def __init__(self) -> None:
+        """Initialize values."""
+        self.ownerName = ''
+        self.id = ''
+        self.title = ''
+        self.chatbot_engine = {}
+        self.per_use_cost = 0
+        self.per_month_cost = 0
+        self.updated_at = None
+
+class PublisherBot():
+    """Represent a PublisherBot container object."""
+
+    def __init__(self) -> None:
+        """Initialize values."""
+        self.token = ''
+        self.publisher_id = ''
+        self.bot_id = ''
+        self.subscription_type = ''
+        self.updated_at = None
+        self.channels = {}
+        self.services = []
 
 class DotFlowContainer():
     """Represent a DotFlow container object."""

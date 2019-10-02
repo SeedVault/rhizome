@@ -28,32 +28,28 @@ class RemoteAPIs():
         :return:
         """
         self.core = core
-        self.logger = BBotLoggerAdapter(logging.getLogger('ext.remote_apis'), self, self.core.bot, '$call_api')                
+        self.logger = BBotLoggerAdapter(logging.getLogger('ext.r_services'), self, self.core.bot, '$call_api')                
 
-
-        # get enabled remote apis for the bot    
-        enabled_rapis = self.dotbot.get('remote_apis')    
-        if not enabled_rapis:
-            return
-
-        rapis = self.dotdb.find_remote_api_by_id(enabled_rapis)        
-        for rapi in rapis:
-            self.logger.debug('Register remote api ' + rapi.name)
-            core.register_function(rapi.function_name, {
+        # get services for the bot    
+        services = self.get_bot_services()
+        for serv in services:
+            self.logger.debug('Register service ' + serv['name'])
+            core.register_function(serv['function_name'], {
                 'object': self, 
-                'method': rapi.function_name, 
-                'url': rapi.url,
-                'request_method': rapi.method,
-                'timeout': rapi.timeout,
-                'cost': rapi.cost, 
-                'predefined_vars': rapi.predefined_vars,
-                'headers': rapi.headers, 
-                'user': rapi.user,
-                'passwd': rapi.passwd,                     
-                'mapped_vars': rapi.mapped_vars,
+                'method': serv['function_name'], 
+                'url': serv['url'],
+                'request_method': serv['method'],
+                'timeout': serv['timeout'],
+                'cost': serv['cost'], 
+                'predefined_vars': serv['predefined_vars'],
+                'headers': serv['headers'], 
+                'user': serv.get('user'),
+                'passwd': serv.get('passwd'),                     
+                'mapped_vars': serv['mapped_vars'],
                 'register_enabled': True})
     
-
+    def get_bot_services(self):
+        return self.dotbot.services
     
     def __getattr__(self, fname):                        
             def function(*args,**kwargs):                               

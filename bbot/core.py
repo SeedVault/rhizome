@@ -131,7 +131,7 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         config_path = os.path.abspath(os.path.dirname(__file__) + "/../instance")
         config = load_configuration(config_path, "BBOT_ENV")
         
-        self.bot = Plugin.load_plugin(config["chatbot_engines"][self.dotbot['chatbotEngine']['type']], self.dotbot, self)               
+        self.bot = Plugin.load_plugin(config["chatbot_engines"][self.dotbot.chatbot_engine['type']], self.dotbot, self)               
         self.logger = BBotLoggerAdapter(logging.getLogger('core'), self, self.bot, 'core')        
         self.bot.core = self
 
@@ -210,18 +210,20 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
                             "bbot.default_chatbot_engine" in configuration file.
         :return: Instance of BBotCore class.
         """
-        
-        if dotbot['id'] in BBotCore.bot_memory_repo.keys():
+                
+        if config['bbot_core']['bot_caching'] and dotbot.id in BBotCore.bot_memory_repo.keys():
             print('Bot found in memory')
-            bbot = BBotCore.bot_memory_repo[dotbot['id']]
+            bbot = BBotCore.bot_memory_repo[dotbot.id]
         else:            
-            if dotbot['chatbotEngine']['type'] not in config['chatbot_engines']:
+            if dotbot.chatbot_engine['type'] not in config['chatbot_engines']:
                 raise ChatbotEngineNotFoundError()
+            print('Loading bot')
             bbot = Plugin.load_plugin(config['bbot_core'], dotbot)  
 
-            BBotCore.bot_memory_repo[dotbot['id']] = bbot # store in memory 
+            if config['bbot_core']['bot_caching']:
+                BBotCore.bot_memory_repo[dotbot.id] = bbot # store in memory 
 
-        bbot.environment = config['environment']         
+        bbot.environment = config['environment']        
         return bbot
 
     @staticmethod
@@ -283,6 +285,11 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
 
         return function_wrapper
 
+    def get_publisher_id(self):
+        return self.dotbot.publisher.publisher_id
+    
+    def get_publisher_subscription_type(self):        
+        return self.dotbot.publisher.subscription_type
 
 @Plugin.register
 class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
@@ -330,7 +337,7 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
         self.pub_id = ''
         self.logger_level = ''
         self.is_fallback = False
-        self.bot_id = self.dotbot['id']        
+        self.bot_id = self.dotbot.id
         self.request = {}  
         self.response = {
             'output': []           
