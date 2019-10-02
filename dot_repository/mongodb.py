@@ -344,7 +344,7 @@ class DotRepository():
         :param filters: Dictionary with matching conditions.
         :return: DotBot instance or None if not found.
         """       
-        result = self.mongo.greenhouse_dotbot.find_one(filters)        
+        result = self.mongo.greenhouse_dotbots.find_one(filters)        
         if not result:
             return None
         return self.marshall_dotbot(result)
