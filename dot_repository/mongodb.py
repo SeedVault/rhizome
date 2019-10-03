@@ -329,7 +329,8 @@ class DotRepository():
         """
         dotbot = DotBot()
         dotbot.owner_id = result['ownerName']
-        dotbot.id = result['name']
+        dotbot.name = result['name']
+        dotbot.bot_id = result['botId']
         dotbot.title = result['title']        
         dotbot.chatbot_engine = result['chatbotEngine']
         dotbot.per_use_cost = result['perUseCost']
@@ -362,8 +363,8 @@ class DotRepository():
             dotbots.append(self.marshall_dotbot(result))
         return dotbots
 
-    def find_dotbot_by_id(self, bot_id: str) -> DotBot:
-        return self.find_one_dotbot({'name': bot_id})
+    def find_dotbot_by_bot_id(self, bot_id: str) -> DotBot:
+        return self.find_one_dotbot({'botId': bot_id})
 
     ### publisher_bot
 
@@ -381,28 +382,24 @@ class DotRepository():
         :param filters: Dictionary with matching conditions.
         :return: PublisherBot instance or None if not found.
         """    
-        result = self.mongo.greenhouse_publisher_bot.find_one(filters)
-        
+        result = self.mongo.greenhouse_publisher_bots.find_one(filters)        
         if not result:
             return None
         return self.marshall_publisherbot(result)
 
-    def find_publisherbots(self, filters: dict) -> list:        
-        print(filters)
-        results = self.mongo.greenhouse_publisher_bot.find(filters)
+    def find_publisherbots(self, filters: dict) -> list:                
+        results = self.mongo.greenhouse_publisher_bots.find(filters)
         publisherbots = []
         for result in results:
             publisherbots.append(self.marshall_publisherbot(result))
         return publisherbots
 
-    def find_dotbot_by_id(self, bot_id: str) -> DotBot:
-        return self.find_one_dotbot({'name': bot_id})
-
     def marshall_publisherbot(self, result) -> PublisherBot:
         pub_bot = PublisherBot()
         pub_bot.token = result['token']
         pub_bot.publisher_id = result['publisherName']
-        pub_bot.bot_id = result['botName']
+        pub_bot.bot_id = result['botId']
+        pub_bot.bot_name = result['botName']
         pub_bot.subscription_type = result['subscriptionType']
         pub_bot.updated_at = result['updatedAt']
         pub_bot.channels = result['channels']

@@ -54,7 +54,8 @@ class DotBot():
     def __init__(self) -> None:
         """Initialize values."""
         self.ownerName = ''
-        self.id = ''
+        self.bot_id = ''
+        self.name = ''
         self.title = ''
         self.chatbot_engine = {}
         self.per_use_cost = 0
@@ -69,6 +70,7 @@ class PublisherBot():
         self.token = ''
         self.publisher_id = ''
         self.bot_id = ''
+        self.bot_name = ''
         self.subscription_type = ''
         self.updated_at = None
         self.channels = {}

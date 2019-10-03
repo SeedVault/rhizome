@@ -42,16 +42,16 @@ def rest():                                       # pylint: disable=W0612
         pub_bot = restful.dotdb.find_publisherbot_by_publisher_token(pub_token)
         if not pub_bot:
             raise Exception('Publisher not found')
-        logger.debug('Found publisher: ' + pub_bot.publisher_id + ' - for bot id: ' + pub_bot.bot_id)
+        logger.debug('Found publisher: ' + pub_bot.publisher_id + ' - for bot name: ' + pub_bot.bot_name + ' - bot id:' + pub_bot.bot_id)
         pub_id = pub_bot.publisher_id
         
         # if 'runBot' in params:
         #    run_bot = restful.params['runBot']
        
-        dotbot = restful.dotdb.find_dotbot_by_id(pub_bot.bot_id)                    
+        dotbot = restful.dotdb.find_dotbot_by_bot_id(pub_bot.bot_id)                    
         if not dotbot:
             raise Exception('Bot not found')
-        bot_id = dotbot.id
+        bot_id = dotbot.bot_id
         # build extended dotbot 
         dotbot.services = pub_bot.services
         dotbot.channels = pub_bot.channels

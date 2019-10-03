@@ -337,7 +337,7 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
         self.pub_id = ''
         self.logger_level = ''
         self.is_fallback = False
-        self.bot_id = self.dotbot.id
+        self.bot_id = self.dotbot.bot_id
         self.request = {}  
         self.response = {
             'output': []           
