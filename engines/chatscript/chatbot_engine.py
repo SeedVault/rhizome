@@ -54,7 +54,7 @@ class ChatScript(ChatbotEngine):
             # persistent
             connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             connection.settimeout(10)  # in secs
-            connection.connect((chatbot_engine['host'], chatbot_engine['port']))            
+            connection.connect((chatbot_engine['host'], int(chatbot_engine['port'])))            
             connection.sendall(msg_to_send)
             msg = ''
             while True:
