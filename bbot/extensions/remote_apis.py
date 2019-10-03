@@ -33,23 +33,24 @@ class RemoteAPIs():
         # get services for the bot    
         services = self.get_bot_services()        
         for serv in services:
-            self.logger.debug('Register service ' + serv['name'])
-            core.register_function(serv['function_name'], {
-                'object': self,         
-                'method': serv['function_name'], 
-                'owner_id': serv['ownerName'],
-                'url': serv['url'],
-                'request_method': serv['method'],
-                'timeout': serv['timeout'],
-                'cost': serv['cost'], 
-                'subscription_type': serv['subscriptionType'],
-                'predefined_vars': serv['predefined_vars'],
-                'headers': serv['headers'], 
-                'user': serv.get('user'),
-                'passwd': serv.get('passwd'),                     
-                'mapped_vars': serv['mapped_vars'],
-                'register_enabled': True})
-    
+            if serv['url'] is not '': # if empty means service is registered from code
+                self.logger.debug('Register service ' + serv['name'])
+                core.register_function(serv['function_name'], {
+                    'object': self,         
+                    'method': serv['function_name'], 
+                    'owner_id': serv['ownerName'],
+                    'url': serv['url'],
+                    'request_method': serv['method'],
+                    'timeout': serv['timeout'],
+                    'cost': serv['cost'], 
+                    'subscription_type': serv['subscriptionType'],
+                    'predefined_vars': serv['predefined_vars'],
+                    'headers': serv['headers'], 
+                    'user': serv.get('user'),
+                    'passwd': serv.get('passwd'),                     
+                    'mapped_vars': serv['mapped_vars'],
+                    'register_enabled': True})
+        
     def get_bot_services(self):
         return self.dotbot.services
     
