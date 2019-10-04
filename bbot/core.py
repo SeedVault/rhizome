@@ -285,8 +285,8 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
 
         return function_wrapper
 
-    def get_publisher_id(self):
-        return self.dotbot.publisher.publisher_id
+    def get_publisher_name(self):
+        return self.dotbot.publisher.publisher_name
     
     def get_publisher_subscription_type(self):        
         return self.dotbot.publisher.subscription_type

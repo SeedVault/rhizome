@@ -94,21 +94,21 @@ class TokenManager():
         if data['register_enabled'] is True:
             self.logger.debug('Paying function activity: ' + str(data))        
 
-            if data['data'].get('suscription_type') == TokenManager.SUSCRIPTION_TYPE_FREE:
+            if data['data'].get('suscriptionType') == TokenManager.SUSCRIPTION_TYPE_FREE:
                 self.logger.debug('Free suscription. No payment needed.')
                 return
-            if data['data'].get('suscription_type') == TokenManager.SUSCRIPTION_TYPE_MONTHLY:
+            if data['data'].get('suscriptionType') == TokenManager.SUSCRIPTION_TYPE_MONTHLY:
                 self.logger.debug('Monthly suscription. No payment needed.')
                 return
 
             # get service owner user id form function name
-            service_owner_id = data['data']['owner_id']
-            if self.dotbot.owner_id == service_owner_id:
+            service_owner_name = data['data']['ownerName']
+            if self.dotbot.owner_name == service_owner_name:
                 self.logger.debug('Bot owner is at the same time the service owner. No payment needed.')
                 return True
 
             try:
-                self.token_manager.transfer(self.dotbot.owner_id, service_owner_id, data['data']['cost'])
+                self.token_manager.transfer(self.dotbot.owner_name, service_owner_name, data['data']['cost'])
             except TokenManagerInsufficientFundsException as e:
                 self.insufficient_funds()
 
@@ -116,12 +116,12 @@ class TokenManager():
         """
         Some previous checks before payment
         """
-        if not self.core.get_publisher_id():
+        if not self.core.get_publisher_name():
             self.core.reset_output()
             self.core.bbot.text('This bot is not free. Please, set publisher token.') # @TODO ?
             raise BBotCoreHalt('Bot halted missing publisher token')    
 
-        if self.dotbot.owner_id == self.core.get_publisher_id():
+        if self.dotbot.owner_name == self.core.get_publisher_name():
             self.logger.debug('Publisher is at the same time the bot owner. No need to do payment.')
             return False
         
