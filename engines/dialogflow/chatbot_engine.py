@@ -1,5 +1,6 @@
 """BBot engine that calls dialogflow."""
 import logging
+import json
 from bbot.core import BBotCore, ChatbotEngine, ChatbotEngineError, BBotLoggerAdapter
 
 import dialogflow
@@ -26,7 +27,10 @@ class DialogFlow(ChatbotEngine):
 
         self.logger = BBotLoggerAdapter(logging.getLogger('dialogfl_cbe'), self, self.core)
         self.chatbot_engine = self.dotbot.chatbot_engine
-        credentials = Credentials.from_service_account_info(self.chatbot_engine['serviceAccount'])
+
+        self.service_account = json.loads(self.chatbot_engine['serviceAccount'])
+
+        credentials = Credentials.from_service_account_info(self.service_account)
         self.session_client = dialogflow.SessionsClient(credentials=credentials)
         
     def get_response(self, request: dict) -> dict:
@@ -52,7 +56,7 @@ class DialogFlow(ChatbotEngine):
         of the conversaion.
         """
                 
-        session = self.session_client.session_path(self.chatbot_engine['serviceAccount']['project_id'], session_id)
+        session = self.session_client.session_path(self.service_account['project_id'], session_id)
         
         text_input = dialogflow.types.TextInput(
             text=input_text, language_code=language_code)
