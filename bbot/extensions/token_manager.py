@@ -94,10 +94,10 @@ class TokenManager():
         if data['register_enabled'] is True:
             self.logger.debug('Paying function activity: ' + str(data))        
 
-            if data['data'].get('suscription_type') == TokenManager.SUSCRIPTION_TYPE_FREE:
+            if data['data'].get('subscription_type') == TokenManager.SUSCRIPTION_TYPE_FREE:
                 self.logger.debug('Free suscription. No payment needed.')
                 return
-            if data['data'].get('suscription_type') == TokenManager.SUSCRIPTION_TYPE_MONTHLY:
+            if data['data'].get('subscription_type') == TokenManager.SUSCRIPTION_TYPE_MONTHLY:
                 self.logger.debug('Monthly suscription. No payment needed.')
                 return
 
