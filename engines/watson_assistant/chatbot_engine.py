@@ -28,8 +28,8 @@ class WatsonAssistant(ChatbotEngine):
 
         # Set up Assistant service.
         self.service = ibm_watson.AssistantV2(
-            iam_apikey = self.dotbot['chatbotEngine']['iamApikey'],
-            url = self.dotbot['chatbotEngine']['url'],
+            iam_apikey = self.dotbot.chatbot_engine['iamApikey'],
+            url = self.dotbot.chatbot_engine['url'],
             version = '2019-02-28'
         )
         self.logger.debug("Connection: " + str(self.service))
@@ -79,7 +79,7 @@ class WatsonAssistant(ChatbotEngine):
         :return: A dict 
         """
         return self.service.message(
-            self.dotbot['chatbotEngine']['assistantId'],
+            self.dotbot.chatbot_engine['assistantId'],
             session_id,
             input={'text': rinput['text']}
         ).get_result()
@@ -102,7 +102,7 @@ class WatsonAssistant(ChatbotEngine):
             session['session_id'] = None
 
         if not session.get('session_id'):                        
-            session_id = self.service.create_session(assistant_id = self.dotbot['chatbotEngine']['assistantId']).get_result()['session_id']                            
+            session_id = self.service.create_session(assistant_id = self.dotbot.chatbot_engine['assistantId']).get_result()['session_id']                            
             session['session_id'] = session_id
             self.logger.debug("Created new session: " + session_id)               
             self.dotdb.set_watson_assistant_session(user_id, session_id, session['context']) # context might have data if we are renewing session
