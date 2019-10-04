@@ -32,7 +32,7 @@ class WolframAlphaShortAnswers(ChatbotEngine):
         """        
         super().get_response(request)
                                
-        appid = self.dotbot['chatbotEngine']['appId']
+        appid = self.dotbot.chatbot_engine['appId']
         query = self.request['input']['text']
         self.logger.debug('Querying to Wolfram Alpha Short Answers API with query: ' + query)
         r = requests.get(f'http://api.wolframalpha.com/v1/result?appid={appid}&i={query}')
