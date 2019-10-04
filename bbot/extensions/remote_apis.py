@@ -38,7 +38,7 @@ class RemoteAPIs():
                 core.register_function(serv['function_name'], {
                     'object': self,         
                     'method': serv['function_name'], 
-                    'owner_id': serv['ownerName'],
+                    'owner_name': serv['ownerName'],
                     'url': serv['url'],
                     'request_method': serv['method'],
                     'timeout': serv['timeout'],
