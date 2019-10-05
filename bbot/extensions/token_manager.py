@@ -102,7 +102,7 @@ class TokenManager():
                 return
 
             # get service owner user id form function name
-            service_owner_name = data['data']['owner_name']
+            service_owner_name = data['data']['ownerName']
             if self.dotbot.owner_name == service_owner_name:
                 self.logger.debug('Bot owner is at the same time the service owner. No payment needed.')
                 return True

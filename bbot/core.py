@@ -289,7 +289,7 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         return self.dotbot.publisher.publisher_name
     
     def get_publisher_subscription_type(self):        
-        return self.dotbot.publisher.subscriptionType
+        return self.dotbot.publisher.subscription_type
 
 @Plugin.register
 class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):

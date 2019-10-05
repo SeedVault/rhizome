@@ -328,7 +328,7 @@ class DotRepository():
         :return: DotBot instance
         """
         dotbot = DotBot()
-        dotbot.owner_id = result['ownerName']
+        dotbot.owner_name = result['ownerName']
         dotbot.name = result['name']
         dotbot.bot_id = result['botId']
         dotbot.title = result['title']        
