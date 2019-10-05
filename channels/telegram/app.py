@@ -41,8 +41,8 @@ def create_app():
                 pub_bot = telegram.dotdb.find_publisherbot_by_publisher_token(publisherbot_token)
                 if not pub_bot:
                     raise Exception('Publisher not found')
-                logger.debug('Found publisher: ' + pub_bot.publisher_id + ' - for bot id: ' + pub_bot.bot_id)
-                pub_id = pub_bot.publisher_id
+                logger.debug('Found publisher: ' + pub_bot.publisher_name + ' - for bot id: ' + pub_bot.bot_id)
+                pub_id = pub_bot.publisher_name
                 
                 # if 'runBot' in params:
                 #    run_bot = telegram.params['runBot']
@@ -94,7 +94,7 @@ def create_app():
         if pb.channels.get('telegram'):
             return True
 
-        logger.warning(f'Deleting invalid Telegram webhook for publisher bot token: {publisherbot_token} - publisher id: ' + pb.publisher_id)
+        logger.warning(f'Deleting invalid Telegram webhook for publisher bot token: {publisherbot_token} - publisher id: ' + pb.publisher_name)
         telegram.set_api_token(pb.channels['telegram']['token'])
         delete_ret = telegram.api.deleteWebhook()
         if delete_ret:

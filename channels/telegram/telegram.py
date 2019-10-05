@@ -174,7 +174,7 @@ class Telegram:
 
         for tpb in telegram_pubbots:
             
-            self.logger.debug('Checking Telegram webhook for publisher id ' + tpb.publisher_id + ' publisher token: ' + tpb.token + ' - bot id: ' + tpb.bot_id + '...')
+            self.logger.debug('Checking Telegram webhook for publisher name ' + tpb.publisher_name + ' publisher token: ' + tpb.token + ' - bot id: ' + tpb.bot_id + '...')
 
             self.logger.debug('Setting token: ' + tpb.channels['telegram']['token'])
             if tpb.channels['telegram']['token']:

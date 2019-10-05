@@ -54,7 +54,7 @@ class TokenManager():
             if not self.previous_checkings():
                 return
 
-            pbalance = self.token_manager.get_balance(self.core.get_publisher_id())
+            pbalance = self.token_manager.get_balance(self.core.get_publisher_name())
             if pbalance < self.minimum_accepted_balance:
                 self.logger.debug('Publisher balance is less than ' + str(self.minimum_accepted_balance))                
                 self.insufficient_funds()
@@ -83,7 +83,7 @@ class TokenManager():
                     return
 
                 try:
-                    self.token_manager.transfer(self.core.get_publisher_id(), self.dotbot.owner_id, volley_cost)
+                    self.token_manager.transfer(self.core.get_publisher_name(), self.dotbot.owner_name, volley_cost)
                 except TokenManagerInsufficientFundsException as e:
                     self.insufficient_funds()
 
