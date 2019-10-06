@@ -27,6 +27,7 @@ telepot = "*"
 dialogflow = "*"
 ibm-watson = "*"
 "web.py" = "==0.40.dev1"
+python-box = "*"
 
 [dev-packages]
 pytest = "*"

@@ -7,6 +7,7 @@ import logging
 import logging.config
 import datetime
 import smokesignal
+from box import Box
 from logging.config import DictConfigurator
 from bbot.config import load_configuration
 
@@ -549,6 +550,11 @@ class BBotFunctionsProxy:
             smokesignal.emit(BBotCore.SIGNAL_CALL_BBOT_FUNCTION_BEFORE, {'name': func_name, 'args': args}) 
 
             response = getattr(fmap['object'], fmap['method'])(args, f_type)            
+
+            # convert dict into box to gain dotted notation access
+            if isinstance(response, dict):
+                response = Box(response)
+
         except BBotExtensionException as e:                
             exception = e # do not remove >> https://stackoverflow.com/questions/29268892/python-3-exception-deletes-variable-in-enclosing-scope-for-unknown-reason
             resp_code = e.code
