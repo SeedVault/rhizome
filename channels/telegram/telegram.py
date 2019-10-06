@@ -172,12 +172,11 @@ class Telegram:
         # cert file only used on local machines with self-signed certificate
         cert_file = open(self.config['cert_filename'], 'rb') if self.config.get('cert_filename') else None
 
-        for tpb in telegram_pubbots:
-            
-            self.logger.debug('Checking Telegram webhook for publisher name ' + tpb.publisher_name + ' publisher token: ' + tpb.token + ' - bot id: ' + tpb.bot_id + '...')
-
-            self.logger.debug('Setting token: ' + tpb.channels['telegram']['token'])
+        for tpb in telegram_pubbots:                    
             if tpb.channels['telegram']['token']:
+                self.logger.debug('Checking Telegram webhook for publisher name ' + tpb.publisher_name + ' publisher token: ' + tpb.token + ' - bot id: ' + tpb.bot_id + '...')
+                self.logger.debug('Setting token: ' + tpb.channels['telegram']['token'])
+                
                 self.set_api_token(tpb.channels['telegram']['token'])
 
                 # build webhook url
