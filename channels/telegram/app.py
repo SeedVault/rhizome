@@ -47,7 +47,7 @@ def create_app():
                 # if 'runBot' in params:
                 #    run_bot = telegram.params['runBot']
             
-                dotbot = telegram.dotdb.find_dotbot_by_id(pub_bot.bot_id)                    
+                dotbot = telegram.dotdb.find_dotbot_by_bot_id(pub_bot.bot_id)                    
                 if not dotbot:
                     raise Exception('Bot not found')
                 bot_id = dotbot.id
