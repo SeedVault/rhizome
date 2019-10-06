@@ -2,6 +2,7 @@ import logging
 from bbot.core import BBotCore, ChatbotEngine, ChatbotEngineError, BBotLoggerAdapter
 import ibm_watson
 import ibm_cloud_sdk_core
+from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 
 class WatsonAssistant(ChatbotEngine):
     """
@@ -27,11 +28,10 @@ class WatsonAssistant(ChatbotEngine):
         self.logger = BBotLoggerAdapter(logging.getLogger('watson_cbe'), self, self.core)
 
         # Set up Assistant service.
-        self.service = ibm_watson.AssistantV2(
-            iam_apikey = self.dotbot.chatbot_engine['iamApikey'],
-            url = self.dotbot.chatbot_engine['url'],
-            version = '2019-02-28'
-        )
+        authenticator = IAMAuthenticator(self.dotbot.chatbot_engine['iamApikey'])        
+        self.service = ibm_watson.AssistantV2(authenticator=authenticator, version = '2019-02-28')
+        self.service.set_service_url(self.dotbot.chatbot_engine['url'])
+        
         self.logger.debug("Connection: " + str(self.service))
         
     def get_response(self, request: dict) -> dict:
