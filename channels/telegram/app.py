@@ -50,7 +50,7 @@ def create_app():
                 dotbot = telegram.dotdb.find_dotbot_by_bot_id(pub_bot.bot_id)                    
                 if not dotbot:
                     raise Exception('Bot not found')
-                bot_id = dotbot.id
+                bot_id = dotbot.bot_id
                 # build extended dotbot 
                 dotbot.services = pub_bot.services
                 dotbot.channels = pub_bot.channels
