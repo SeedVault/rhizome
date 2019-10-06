@@ -77,7 +77,7 @@ class WeatherReport():
 
             # adds accuweather logo to the bots response
             self.core.bbot.text('Weather forecast provided by Accuweather')
-            self.core.bbot.image('https://www.botanic.io/bbot/static/images/accuweather_logo.png')
+            self.core.bbot.image('https://static.seedtoken.io/AW_RGB.png')
 
             return {
                 'text': aw[0]['WeatherText'],
