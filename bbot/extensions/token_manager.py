@@ -97,20 +97,22 @@ class TokenManager():
             if data['data'].get('subscription_type') == TokenManager.SUSCRIPTION_TYPE_FREE:
                 self.logger.debug('Free suscription. No payment needed.')
                 return
-            if data['data'].get('subscription_type') == TokenManager.SUSCRIPTION_TYPE_MONTHLY:
+            elif data['data'].get('subscription_type') == TokenManager.SUSCRIPTION_TYPE_MONTHLY:
                 self.logger.debug('Monthly suscription. No payment needed.')
                 return
+            elif data['data'].get('subscription_type') == TokenManager.SUSCRIPTION_TYPE_PER_USE:
+                # get service owner user id form function name
+                service_owner_name = data['data']['owner_name']
+                if self.dotbot.owner_name == service_owner_name:
+                    self.logger.debug('Bot owner is at the same time the service owner. No payment needed.')
+                    return True
 
-            # get service owner user id form function name
-            service_owner_name = data['data']['ownerName']
-            if self.dotbot.owner_name == service_owner_name:
-                self.logger.debug('Bot owner is at the same time the service owner. No payment needed.')
-                return True
-
-            try:
-                self.token_manager.transfer(self.dotbot.owner_name, service_owner_name, data['data']['cost'])
-            except TokenManagerInsufficientFundsException as e:
-                self.insufficient_funds()
+                try:
+                    self.token_manager.transfer(self.dotbot.owner_name, service_owner_name, data['data']['cost'])
+                except TokenManagerInsufficientFundsException as e:
+                    self.insufficient_funds()
+            else:
+                self.logger.debug('No subscription type defined. Cancelling payment.')        
 
     def previous_checkings(self):
         """

@@ -32,7 +32,7 @@ class WeatherReport():
         
         core.register_function('weather', {'object': self, 'method': 'weather', 'cost': 0.1, 'register_enabled': True})
 
-    @BBotCore.extensions_cache
+    #@BBotCore.extensions_cache @TODO we should implement custom cache for this: we need to add accuweather text and image always
     def weather(self, args, f_type):
         """
         Returns weather report

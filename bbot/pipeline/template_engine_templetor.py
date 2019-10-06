@@ -43,9 +43,7 @@ class TemplateEngineTemplator():
     def render(self, string: str) -> str:
         """
         Renders any string with configured bbot custom functions and bot session vars
-        """        
-        self.logger.debug('Rendering template: "' + str(string) + '"')
-
+        """                
         # We still need a way to know if a string is a template or not, but Templator don't need enclosing
         # So for Templator, just enclose the whole string with {{ }} for BBot to know it is a template
         if re.search('({%).*(%})|({{.*}})', string) is None:
@@ -64,6 +62,7 @@ class TemplateEngineTemplator():
         c_functions = self.get_functions()        
         t_globals = {**session_vars, **c_functions}
 
+        self.logger.debug('Rendering template: "' + str(string) + '"')
         templator_obj = Template(string, globals=t_globals)
         response = str(templator_obj())
 

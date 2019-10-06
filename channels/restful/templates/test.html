@@ -307,7 +307,7 @@
             if (data.error) {
                 console.log(data.error)
                 if (data.output.length) {
-                  botResponse = escapeHtml(data.output[0].text)
+                  botResponse = escapeHtml(data.output)
                 } else {
                   botResponse = 'Error from BBot'
                 }
@@ -320,8 +320,16 @@
               console.log(response);
               console.log("-".repeat(80));
               if (data.output.length) {
-                botResponse = escapeHtml(data.output[0].text)
-                setTimeout("showBotResponse()", 500 + Math.floor((botResponse.length * 10) + 1));
+                var botResponseArr = []
+                data.output.forEach((o) => {
+                  console.log(o)
+                  if (o.text) {                    
+                    botResponseArr.push(escapeHtml(o.text))                    
+                  }
+                })
+                botResponse = botResponseArr.join("<br />")
+                
+                showBotResponse()
               }
             }
           })
