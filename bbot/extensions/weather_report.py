@@ -77,10 +77,13 @@ class WeatherReport():
 
             # adds accuweather logo to the bots response
             self.core.bbot.text('Weather forecast provided by Accuweather')
-            self.core.bbot.image('https://static.seedtoken.io/AW_RGB.png')
-
+            self.core.bbot.image('https://static.seedtoken.io/AW_RGB.png')            
             return {
                 'text': aw[0]['WeatherText'],
+                'temperature': {
+                    'metric': str(aw[0]['Temperature']['Metric']['Value']) + aw[0]['Temperature']['Metric']['Unit'],
+                    'imperial': str(aw[0]['Temperature']['Imperial']['Value']) + aw[0]['Temperature']['Metric']['Unit'],
+                    },
                 'canonicalLocation': canonical_location
             }
 
