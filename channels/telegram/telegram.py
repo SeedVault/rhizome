@@ -3,6 +3,7 @@ import telepot
 import logging
 from urllib.parse import urlparse
 import logging.config
+import time
 
 
 class Telegram:
@@ -162,6 +163,8 @@ class Telegram:
         This will check and start all webhooks for telegram enabled bots
         """
 
+        sleep_time = 3 # 20 requests per minute is ok?
+
         # get all telegram enabled bots
         telegram_pubbots = self.dotdb.find_publisherbots_by_channel('telegram')
         
@@ -174,40 +177,46 @@ class Telegram:
 
         for tpb in telegram_pubbots:                    
             if tpb.channels['telegram']['token']:
+                self.logger.debug('---------------------------------------------------------------------------------------------------------------')
                 self.logger.debug('Checking Telegram webhook for publisher name ' + tpb.publisher_name + ' publisher token: ' + tpb.token + ' - bot id: ' + tpb.bot_id + '...')
                 self.logger.debug('Setting token: ' + tpb.channels['telegram']['token'])
                 
-                self.set_api_token(tpb.channels['telegram']['token'])
+                try:
+                    self.set_api_token(tpb.channels['telegram']['token'])
 
-                # build webhook url
-                url = self.get_webhook_url().replace('<publisherbot_token>', tpb.token)
+                    # build webhook url
+                    url = self.get_webhook_url().replace('<publisherbot_token>', tpb.token)
 
-                # check webhook current status (faster than overriding webhook)
-                webhook_info = self.api.getWebhookInfo()
-                self.logger.debug('WebHookInfo: ' + str(webhook_info))
-                webhook_notset = webhook_info['url'] == ''
-                if webhook_info['url'] != url and not webhook_notset: # webhook url is set and wrong
-                    self.logger.warning('Telegram webhook set is invalid (' + webhook_info['url'] + '). Deleting webhook...')
-                    delete_ret = self.api.deleteWebhook()
-                    if delete_ret:
-                        self.logger.warning("Successfully deleted.")
+                    # check webhook current status (faster than overriding webhook)
+                    webhook_info = self.api.getWebhookInfo()
+                    self.logger.debug('WebHookInfo: ' + str(webhook_info))
+                    webhook_notset = webhook_info['url'] == ''
+                    if webhook_info['url'] != url and not webhook_notset: # webhook url is set and wrong
+                        self.logger.warning('Telegram webhook set is invalid (' + webhook_info['url'] + '). Deleting webhook...')
+                        delete_ret = self.api.deleteWebhook()
+                        if delete_ret:
+                            self.logger.warning("Successfully deleted.")
+                        else:
+                            error = "Couldn't delete the invalid webhook"
+                            self.logger.error(error)
+                            raise Exception(error)
+                        webhook_notset = True
+                    if webhook_notset: # webhook is not set
+                        self.logger.info(f'Setting webhook for bot id ' + tpb.bot_id + f' with webhook url {url}')
+                        set_ret = self.api.setWebhook(url=url, certificate=cert_file)
+                        self.logger.debug("setWebHook response: " + str(set_ret))
+                        if set_ret:
+                            self.logger.info("Successfully set.")
+                        else:
+                            error = "Couldn't set the webhook"
+                            self.logger.error(error)
+                            raise Exception(error)
                     else:
-                        error = "Couldn't delete the invalid webhook"
-                        self.logger.error(error)
-                        raise Exception(error)
-                    webhook_notset = True
-                if webhook_notset: # webhook is not set
-                    self.logger.info(f'Setting webhook for bot id ' + tpb.bot_id + f' with webhook url {url}')
-                    set_ret = self.api.setWebhook(url=url, certificate=cert_file)
-                    self.logger.debug("setWebHook response: " + str(set_ret))
-                    if set_ret:
-                        self.logger.info("Successfully set.")
-                    else:
-                        error = "Couldn't set the webhook"
-                        self.logger.error(error)
-                        raise Exception(error)
-                else:
-                    self.logger.debug("Webhook is correct")
+                        self.logger.debug("Webhook is correct")
+                except telepot.exception.TelegramError:
+                    self.logger.debug('Invalid Telegram token') # This might happen when the token is invalid. We need to ignore and ontinue
+
+                time.sleep(sleep_time)
 
     def buttons_process(self, bbot_output: dict) -> dict:
         """
