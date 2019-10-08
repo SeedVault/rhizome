@@ -108,7 +108,7 @@ class RemoteAPIs():
                         if 'application/json' in r.headers.get('Content-Type'):
                             return r.json()                
                         else: # default
-                            return r.text()                
+                            return r.text              
                     
                     # On error
                     r.raise_for_status()
