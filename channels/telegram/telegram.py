@@ -3,6 +3,7 @@ import telepot
 import logging
 from urllib.parse import urlparse
 import logging.config
+import time
 
 
 class Telegram:
@@ -162,6 +163,8 @@ class Telegram:
         This will check and start all webhooks for telegram enabled bots
         """
 
+        sleep_time = 3 # 20 requests per minute is ok?
+
         # get all telegram enabled bots
         telegram_pubbots = self.dotdb.find_publisherbots_by_channel('telegram')
         
@@ -212,6 +215,8 @@ class Telegram:
                         self.logger.debug("Webhook is correct")
                 except telepot.exception.TelegramError:
                     self.logger.debug('Invalid Telegram token') # This might happen when the token is invalid. We need to ignore and ontinue
+
+                time.sleep(sleep_time)
 
     def buttons_process(self, bbot_output: dict) -> dict:
         """
