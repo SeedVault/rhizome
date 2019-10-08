@@ -122,7 +122,7 @@ def rest():                                       # pylint: disable=W0612
 
 def get_locale() -> str:
     """Returns locale for tts service. It first check on params if no value provided it fallsback to http header."""
-    dotbot_lc = restful.dotbot.get('enabledLocales', [])
+    dotbot_lc = restful.dotbot.enabled_locales or []
     
     # get current locale
     param_lc = restful.params.get('locale', None) 
@@ -139,17 +139,20 @@ def get_locale() -> str:
         #client locale is not enabled by the bot. check if there is any language available for it anyway
         #@TODO
 
-        curr_lc = restful.dotbot.get('defaultLocale', 'en_US')
+        curr_lc = restful.dotbot.default_locale or 'en_US'
+
+    if restful.params.get('locale'):
+        curr_lc = restful.params['locale']
 
     return curr_lc
 
 def get_tts_voice_id() -> str:
     """Returns bbot voice id. First check on params. Default value is 1"""
-    return restful.dotbot.get('ttsVoiceId', None) or restful.params.get('ttsVoiceId', None) or 0
+    return restful.dotbot.tts_voice_id or restful.params.get('ttsVoiceId', None) or 0
 
 def get_timescale() -> str: #@TODO we might need a method to get values like this
     """Returns bbot voice id. First check on params. Default value is 1"""
-    return restful.dotbot.get('ttsTimeScale', None) or restful.params.get('ttsTimeScale', None) or 100
+    return restful.dotbot.tts_time_scale or restful.params.get('ttsTimeScale', None) or 100
 
 
 def get_http_locale() -> str:
