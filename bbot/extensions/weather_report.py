@@ -81,8 +81,8 @@ class WeatherReport():
             return {
                 'text': aw[0]['WeatherText'],
                 'temperature': {
-                    'metric': str(aw[0]['Temperature']['Metric']['Value']) + aw[0]['Temperature']['Metric']['Unit'],
-                    'imperial': str(aw[0]['Temperature']['Imperial']['Value']) + aw[0]['Temperature']['Metric']['Unit'],
+                    'metric': str(aw[0]['Temperature']['Metric']['Value']),
+                    'imperial': str(aw[0]['Temperature']['Imperial']['Value'])
                     },
                 'canonicalLocation': canonical_location
             }

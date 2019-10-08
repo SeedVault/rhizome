@@ -1,5 +1,6 @@
 """Manages tokens with the Seed Wallet"""
 import logging
+#from requests_futures.sessions import FuturesSession
 import requests
 from bbot.core import BBotLoggerAdapter
 from bbot.extensions.token_manager import TokenManagerInsufficientFundsException

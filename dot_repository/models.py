@@ -67,6 +67,7 @@ class PublisherBot():
 
     def __init__(self) -> None:
         """Initialize values."""
+        self.id = ''
         self.token = ''
         self.publisher_name = ''
         self.bot_id = ''

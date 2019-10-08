@@ -396,6 +396,7 @@ class DotRepository():
 
     def marshall_publisherbot(self, result) -> PublisherBot:
         pub_bot = PublisherBot()
+        pub_bot.id = result['_id']
         pub_bot.token = result['token']
         pub_bot.publisher_name = result['publisherName']
         pub_bot.bot_id = result['botId']
@@ -696,3 +697,11 @@ class DotRepository():
         """
         self.mongo.watson_assistant_bot_data.update({'user_id': user_id}, {'user_id': user_id, 'session_id': session_id, 'context': context}, upsert = True)
         
+
+## GREENHOUSE SUBSCRIPTION_PAYMENTS
+
+    def get_last_payment_date_by_subscription_id(self, subscription_id):
+        res = self.mongo.subscription_payments.find_one({'subscriptionId': subscription_id})        
+        if res:
+            return res['lastPaymentDate']
+        return None

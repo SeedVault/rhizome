@@ -31,7 +31,8 @@ def rest():                                       # pylint: disable=W0612
     try:
         print('--------------------------------------------------------------------------------------------------------------------------------')
         restful.params = request.get_json(force=True)
-        logger.debug("Received request:" + str(restful.params))
+        logger.debug("Received request " + str(restful.params))
+        
         user_id = restful.params.get('userId')
         bot_id = restful.params.get('botId')
         org_id = restful.params.get('orgId')
@@ -42,7 +43,7 @@ def rest():                                       # pylint: disable=W0612
         pub_bot = restful.dotdb.find_publisherbot_by_publisher_token(pub_token)
         if not pub_bot:
             raise Exception('Publisher not found')
-        logger.debug('Found publisher: ' + pub_bot.publisher_name + ' - for bot name: ' + pub_bot.bot_name + ' - bot id:' + pub_bot.bot_id)
+        logger.debug('Found subscription id: ' + str(pub_bot.id) + ' - publisher name: ' + pub_bot.publisher_name + ' - for bot name: ' + pub_bot.bot_name + ' - bot id:' + pub_bot.bot_id)
         pub_id = pub_bot.publisher_name
         
         # if 'runBot' in params:
@@ -55,7 +56,7 @@ def rest():                                       # pylint: disable=W0612
         # build extended dotbot 
         dotbot.services = pub_bot.services
         dotbot.channels = pub_bot.channels
-        dotbot.publisher = pub_bot
+        dotbot.botsubscription = pub_bot
 
         restful.dotbot = dotbot # needed for methods below
         bot = BBotCore.create_bot(config, dotbot)

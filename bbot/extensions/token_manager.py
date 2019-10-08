@@ -2,14 +2,16 @@
 import logging
 import codecs
 import smokesignal
+import datetime
+import dateutil.relativedelta
 from bbot.core import BBotCore, BBotCoreHalt, ChatbotEngine, BBotException, BBotLoggerAdapter, BBotExtensionException
 
 class TokenManager():
     """Executes payments on a private development Ethereum parity node using personal module for seed token demo page"""
 
-    SUSCRIPTION_TYPE_FREE = 'free'
-    SUSCRIPTION_TYPE_PER_USE = 'perUse'
-    SUSCRIPTION_TYPE_MONTHLY = 'monthly'
+    SUBSCRIPTION_TYPE_FREE = 'free'
+    SUBSCRIPTION_TYPE_PER_USE = 'perUse'
+    SUBSCRIPTION_TYPE_MONTHLY = 'perMonth'
 
     def __init__(self, config: dict, dotbot: dict) -> None:
         """
@@ -22,6 +24,7 @@ class TokenManager():
         self.minimum_accepted_balance = 5
         self.core = None    
         self.token_manager = None
+        self.greenhousedb = None
 
     def init(self, core: BBotCore):
         """
@@ -33,23 +36,22 @@ class TokenManager():
 
         smokesignal.on(BBotCore.SIGNAL_CALL_BBOT_FUNCTION_AFTER, self.function_payment)
         smokesignal.on(BBotCore.SIGNAL_GET_RESPONSE_AFTER, self.volley_payment)
-        #smokesignal.on(BBotCore.SIGNAL_GET_RESPONSE_BEFORE, self.payment_check)  disabled for demo
+        smokesignal.on(BBotCore.SIGNAL_GET_RESPONSE_BEFORE, self.payment_check)
 
     def payment_check(self, data):
         """
         Check before anything if the payment for the service is paid for current period
         """
         
-        if self.core.get_publisher_subscription_type() == TokenManager.SUSCRIPTION_TYPE_MONTHLY:
+        if self.core.get_publisher_subscription_type() == TokenManager.SUBSCRIPTION_TYPE_MONTHLY:
             self.logger.debug('Monthly suscription. Will check payment status')
-            pstatus = self._check_period_payment_status(TokenManager.SUSCRIPTION_TYPE_MONTHLY)
-            self.logger.debug('Last payment date: ' + pstatus['last_payment_date'] + ' Payment status: ' + pstatus['status'])
-            if pstatus['status'] == False:
-                self.core.reset_output()
-                self.core.bbot.text('Sorry, the bot is not available at this moment. Please try again later.') # @TODO ?
-                raise BBotCoreHalt('Bot halted by monthly paiment not paid')    
-                
-        if self.core.get_publisher_subscription_type() == TokenManager.SUSCRIPTION_TYPE_PER_USE and self.get_bot_volley_cost() > 0:
+            paid = self.check_period_payment_status(self.dotbot.botsubscription.id)
+            if not paid:
+                self.logger.debug('Publisher last payment is more than a month ago.')
+                self.insufficient_funds()
+        """
+        Disabling this for now. We need to make tx async in order to stop wait for a response we dont need at the moment
+        elif self.core.get_publisher_subscription_type() == TokenManager.SUBSCRIPTION_TYPE_PER_USE and self.dotbot.per_use_cost > 0:
             self.logger.debug('Per use suscription. Will check balance first')
             if not self.previous_checkings():
                 return
@@ -58,24 +60,32 @@ class TokenManager():
             if pbalance < self.minimum_accepted_balance:
                 self.logger.debug('Publisher balance is less than ' + str(self.minimum_accepted_balance))                
                 self.insufficient_funds()
-                
-    def check_period_payment_status(self, period_type):
-        return {'last_payment_date': 123123123, 'status': True}
-
+        """        
+    def check_period_payment_status(self, subscription_id):
+        lastPaymentDate = self.greenhousedb.get_last_payment_date_by_subscription_id(subscription_id)
+        if not lastPaymentDate:
+            self.logger.debug('There is no payments')
+            return False
+        delta = (datetime.datetime.now() - lastPaymentDate).days
+        self.logger.debug('Last payment date is ' + str(lastPaymentDate) + ' - days ago: ' + str(delta))
+        if delta >= 30:
+            return False
+        return True
+        
     def volley_payment(self, data):
         """
         Volley payment from publisher to bot owner
         """   
 
-        if self.core.get_publisher_subscription_type() == TokenManager.SUSCRIPTION_TYPE_FREE:
+        if self.core.get_publisher_subscription_type() == TokenManager.SUBSCRIPTION_TYPE_FREE:
             self.logger.debug('Free suscription. No payment needed.')
             return
-        if self.core.get_publisher_subscription_type() == TokenManager.SUSCRIPTION_TYPE_MONTHLY:
+        if self.core.get_publisher_subscription_type() == TokenManager.SUBSCRIPTION_TYPE_MONTHLY:
             self.logger.debug('Monthly suscription. No volley payment needed.')
             return
-        if self.core.get_publisher_subscription_type() == TokenManager.SUSCRIPTION_TYPE_PER_USE:
+        if self.core.get_publisher_subscription_type() == TokenManager.SUBSCRIPTION_TYPE_PER_USE:
 
-            volley_cost = self.get_bot_volley_cost()
+            volley_cost = self.dotbot.per_use_cost
 
             if volley_cost is not None: # register bot volleys only if it has declared volley cost (can be 0)
                 self.logger.debug('Paying volley activity')        
@@ -94,13 +104,13 @@ class TokenManager():
         if data['register_enabled'] is True:
             self.logger.debug('Paying function activity: ' + str(data))        
 
-            if data['data'].get('subscription_type') == TokenManager.SUSCRIPTION_TYPE_FREE:
+            if data['data'].get('subscription_type') == TokenManager.SUBSCRIPTION_TYPE_FREE:
                 self.logger.debug('Free suscription. No payment needed.')
                 return
-            elif data['data'].get('subscription_type') == TokenManager.SUSCRIPTION_TYPE_MONTHLY:
+            elif data['data'].get('subscription_type') == TokenManager.SUBSCRIPTION_TYPE_MONTHLY:
                 self.logger.debug('Monthly suscription. No payment needed.')
                 return
-            elif data['data'].get('subscription_type') == TokenManager.SUSCRIPTION_TYPE_PER_USE:
+            elif data['data'].get('subscription_type') == TokenManager.SUBSCRIPTION_TYPE_PER_USE:
                 # get service owner user id form function name
                 service_owner_name = data['data']['owner_name']
                 if self.dotbot.owner_name == service_owner_name:
@@ -136,13 +146,6 @@ class TokenManager():
         self.core.reset_output()
         self.core.bbot.text('Sorry, the bot is not available at this moment. Please try again later.') # @TODO chec environment to show different message
         raise BBotCoreHalt('Bot halted by insufficient funds')    
-
-    def get_bot_volley_cost(self):
-        if self.core.get_publisher_subscription_type() == TokenManager.SUSCRIPTION_TYPE_PER_USE:
-            return self.dotbot.per_use_cost
-        if self.core.get_publisher_subscription_type() == TokenManager.SUSCRIPTION_TYPE_PER_MONTH:
-            return self.dotbot.per_month_cost
-        return None
             
 class TokenManagerInsufficientFundsException(Exception):
     """ """
