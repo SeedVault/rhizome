@@ -18,7 +18,7 @@ class BBotResponseOutput():
         self.core = None
         self.logger = None
 
-        self.functions = ['text', 'image', 'video', 'audio', 'button']
+        self.functions = ['text', 'image', 'video', 'audio', 'button', 'outputHasText']
 
     def init(self, core: BBotCore):
         """
@@ -55,6 +55,15 @@ class BBotResponseOutput():
         self.core.add_output(bbot_response)
         return bbot_response
 
+    def outputHasText(self, args, f_type):
+        """
+        Returns True or False if the output has the specified text
+        """
+        for o in self.core.response['output']:            
+            if list(o.keys())[0] is 'text':
+                return True
+        return False    
+        
     def image(self, args, f_type):
         """
         Returns BBot image output object

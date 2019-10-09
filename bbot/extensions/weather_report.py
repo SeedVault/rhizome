@@ -1,6 +1,7 @@
 """"""
 import requests
 import logging
+import smokesignal
 from bbot.core import BBotCore, ChatbotEngine, BBotException, BBotLoggerAdapter, BBotExtensionException
 
 class WeatherReport():
@@ -29,10 +30,17 @@ class WeatherReport():
         """
         self.core = core
         self.logger = BBotLoggerAdapter(logging.getLogger('core_fnc.weather'), self, self.core.bot, '$weather')                
-        
-        core.register_function('weather', {'object': self, 'method': 'weather', 'cost': 0.1, 'register_enabled': True})
 
-    #@BBotCore.extensions_cache @TODO we should implement custom cache for this: we need to add accuweather text and image always
+        self.method_name = 'weather'
+        self.accuweather_text = 'Weather forecast provided by Accuweather'
+        self.accuweather_image_url = 'https://static.seedtoken.io/AW_RGB.png'
+        
+        core.register_function('weather', {'object': self, 'method': self.method_name, 'cost': 0.1, 'register_enabled': True})
+        # we register this to add accuweather text even when result is cached from extensions_cache decorator
+        smokesignal.on(BBotCore.SIGNAL_CALL_BBOT_FUNCTION_AFTER, self.add_accuweather_text)
+        
+
+    @BBotCore.extensions_cache
     def weather(self, args, f_type):
         """
         Returns weather report
@@ -74,10 +82,7 @@ class WeatherReport():
         self.logger.debug('Accuweather response: ' + str(r.json())[0:300])
         if r.status_code == 200:
             aw = r.json()
-
-            # adds accuweather logo to the bots response
-            self.core.bbot.text('Weather forecast provided by Accuweather')
-            self.core.bbot.image('https://static.seedtoken.io/AW_RGB.png')            
+            
             return {
                 'text': aw[0]['WeatherText'],
                 'temperature': {
@@ -105,4 +110,13 @@ class WeatherReport():
         self.logger.critical(err_msg)
         raise BBotExtensionException(err_msg, BBotCore.FNC_RESPONSE_ERROR)
         
-        
+    def add_accuweather_text(self, data):
+        # check if call is made from a weather call
+        if data['name'] is self.method_name:               
+            # check if the call was successful
+            if data['response_code'] is BBotCore.FNC_RESPONSE_OK:
+                # check if text is already added
+                if not self.core.bbot.outputHasText(self.accuweather_text):
+                    # adds accuweather logo to the bots response
+                    self.core.bbot.text(self.accuweather_text)
+                    self.core.bbot.image(self.accuweather_image_url)            

@@ -198,7 +198,7 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         Resets the output
         """
         self.logger.debug('Resetting output')
-        self.response['output'] = []
+        self.response['output'] = []        
 
     @staticmethod
     def create_bot(config: dict, dotbot: dict={}):

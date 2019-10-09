@@ -3,9 +3,9 @@
 import logging
 import time
 import datetime
+import smokesignal
 from pymongo import MongoClient, DeleteMany
 from bson.objectid import ObjectId
-import smokesignal
 from bbot.core import BBotCore, ChatbotEngine, BBotException, BBotLoggerAdapter
 
 class ActivityLogger():
