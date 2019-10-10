@@ -396,7 +396,7 @@ class DotRepository():
 
     def marshall_publisherbot(self, result) -> PublisherBot:
         pub_bot = PublisherBot()
-        pub_bot.id = result['_id']
+        pub_bot.id = result['subscriptionId']
         pub_bot.token = result['token']
         pub_bot.publisher_name = result['publisherName']
         pub_bot.bot_id = result['botId']

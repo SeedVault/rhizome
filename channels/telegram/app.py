@@ -54,7 +54,7 @@ def create_app():
                 # build extended dotbot 
                 dotbot.services = pub_bot.services
                 dotbot.channels = pub_bot.channels
-                dotbot.publisher = pub_bot
+                dotbot.botsubscription = pub_bot
                 
                 token = pub_bot.channels['telegram']['token']
                 telegram.set_api_token(token)
