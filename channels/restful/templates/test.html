@@ -307,12 +307,19 @@
             if (data.error) {
                 console.log(data.error)
                 if (data.output.length) {
-                  botResponse = escapeHtml(data.output)
+                  var botResponseArr = []
+                  data.output.forEach((o) => {
+                    console.log(o)
+                    if (o.text) {                    
+                      botResponseArr.push(escapeHtml(o.text))                    
+                    }
+                  })
+                  botResponse = botResponseArr.join("<br />")
                 } else {
                   botResponse = 'Error from BBot'
                 }
-                showBotResponse()
-                return
+              showBotResponse()
+              return
             } else {
               $("#typing").show();
               $('.msg_body').scrollTop($('.msg_body')[0].scrollHeight);
