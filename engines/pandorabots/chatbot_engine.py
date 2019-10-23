@@ -44,7 +44,7 @@ class PandoraBots(ChatbotEngine):
             self.logger.debug('There is no session for this user. Ask Pandorabots for a new one.')
             response = self.atalk(self.request['input']['text'])
             self.logger.debug('Storing sessionid and client_name')            
-            self.set_session(response_json['sessionid'], response_json['client_name'])
+            self.set_session(response['sessionid'], response['client_name'])
         else:
             sessionid = session['sessionid']
             client_name = session['client_name']        
