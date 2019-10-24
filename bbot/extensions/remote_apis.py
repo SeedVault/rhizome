@@ -105,7 +105,7 @@ class RemoteAPIs():
                     self.logger.debug('Response:' + str(r))
                     self.logger.debug('Headers: ' + str(r.headers))
                     if r.status_code == requests.codes.ok:
-                        if 'application/json' in r.headers.get('Content-Type'):
+                        if 'application/json' in r.headers.get('Content-Type') or 'application/javascript' in r.headers.get('Content-Type'):
                             return r.json()                
                         else: # default
                             return r.text              
