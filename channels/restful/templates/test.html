@@ -301,7 +301,7 @@
           data: JSON.stringify(data),
           type: 'POST'})
           .done(function(response) {
-            var data = JSON.parse(response);
+            var data = response
             console.log("RESPONSE:")
 
             if (data.error) {

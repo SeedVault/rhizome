@@ -7,7 +7,7 @@ import logging
 import logging.config
 
 from flask_cors import CORS, cross_origin
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, Response
 from collections import defaultdict
 from bbot.core import BBotCore, ChatbotEngine, Plugin, BBotException
 from bbot.config import load_configuration
@@ -101,8 +101,11 @@ def rest():                                       # pylint: disable=W0612
         if restful.params.get('debugEnabled') is None:                
             if 'debug' in bbot_response:                     
                 del bbot_response['debug']
+        
+        http_code = 200
 
     except Exception as e:
+        http_code = 500
         if not isinstance(e, BBotException): # If BBotException means the issue is in botland, not rhizome
             logger.critical(str(e) + "\n" + str(traceback.format_exc()))            
         else:
@@ -118,7 +121,7 @@ def rest():                                       # pylint: disable=W0612
             # @TODO let bot engine decide what to do?
         
     logger.debug("Response from restful channel: " + str(bbot_response))
-    return json.dumps(bbot_response)
+    return Response(json.dumps(bbot_response), status=http_code, mimetype="application/json")
 
 def get_locale() -> str:
     """Returns locale for tts service. It first check on params if no value provided it fallsback to http header."""
