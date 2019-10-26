@@ -696,7 +696,7 @@ class DotRepository():
         :param context: A dict with context
         """
         self.mongo.watson_assistant_bot_data.update({'user_id': user_id}, {'user_id': user_id, 'session_id': session_id, 'context': context}, upsert = True)
-        
+
 
 ## GREENHOUSE SUBSCRIPTION_PAYMENTS
 
@@ -705,3 +705,27 @@ class DotRepository():
         if res:
             return res['lastPaymentDate']
         return None
+
+## PANDORABOTS SESSIONID AND CLIENT_NAME
+
+    def get_pandorabots_session(self, bot_id: str, user_id: str):
+        """
+        Returns user sessionid and client_name
+
+        :param: user_id: A string with user id
+        :return: A dict
+        """
+        r = self.mongo.pandorabots_bot_data.find_one({'bot_id': bot_id, 'user_id': user_id})
+        return r
+
+    def set_pandorabots_session(self, bot_id: str, user_id: str, sessionid: str, client_name: str):
+        """
+        Stores user session id and context
+
+        :param user_id: A string with user id
+        :param session_id: A string with session id
+        :param context: A dict with context
+        """
+        self.mongo.pandorabots_bot_data.update(
+            {'bot_id': bot_id, 'user_id': user_id}, {'bot_id': bot_id, 'user_id': user_id, 'sessionid': sessionid, 'client_name': client_name}, upsert = True)
+        
