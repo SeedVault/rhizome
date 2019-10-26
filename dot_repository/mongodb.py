@@ -701,7 +701,7 @@ class DotRepository():
 ## GREENHOUSE SUBSCRIPTION_PAYMENTS
 
     def get_last_payment_date_by_subscription_id(self, subscription_id):
-        res = self.mongo.subscription_payments.find_one({'subscriptionId': subscription_id})        
+        res = self.mongo.subscription_payments.find_one({'subscriptionId': ObjectId(subscription_id)})        
         if res:
             return res['lastPaymentDate']
         return None
