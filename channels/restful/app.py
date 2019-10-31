@@ -66,6 +66,8 @@ def rest():                                       # pylint: disable=W0612
         #    _ = input_type
         #    input_text = input_text + input_value
         req = bot.create_request(input_params, user_id, bot_id, org_id, pub_id)
+        bbot_response = {}
+        http_code = 500     
         bbot_response = bot.get_response(req)
         
         #response = defaultdict(lambda: defaultdict(dict))    # create a response dict with autodict property
@@ -105,12 +107,14 @@ def rest():                                       # pylint: disable=W0612
         
         http_code = 200
 
-    except Exception as e:
-        http_code = 500
-        if not isinstance(e, BBotException): # If BBotException means the issue is in botland, not rhizome
-            logger.critical(str(e) + "\n" + str(traceback.format_exc()))            
+    except Exception as e:          
+        if isinstance(e, BBotException): # BBotException means the issue is in bot userland, not rhizome
+            http_code = 200                                
         else:
-            pass # we should alert the botdev
+            logger.critical(str(e) + "\n" + str(traceback.format_exc()))            
+            http_code = 500            
+            
+
         if config['environment'] == 'development':
             bbot_response = {
                 'output': [{'text': str(e)}], #@TODO use bbot.text() 

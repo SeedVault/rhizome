@@ -2,7 +2,7 @@
 import logging
 import re
 from web.template import *
-from bbot.core import BBotCore, ChatbotEngine, BBotLoggerAdapter
+from bbot.core import BBotCore, ChatbotEngine, BBotLoggerAdapter, BBotException
 
 class TemplateEngineTemplator():
     """."""
@@ -64,7 +64,12 @@ class TemplateEngineTemplator():
 
         self.logger.debug('Rendering template: "' + str(string) + '"')
         templator_obj = Template(string, globals=t_globals)
-        response = str(templator_obj())
+        try:
+            response = str(templator_obj())
+        except NameError as e:
+            err_msg = 'Tried to run a not defined function in render: ' + str(e)
+            self.core.logger.debug(err_msg)            
+            raise BBotException(err_msg)
 
         if response[-1:] == '\n':       # Templator seems to add a trailing \n, remove it
             response = response[:-1]
