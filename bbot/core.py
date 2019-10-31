@@ -145,8 +145,8 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         :param function_name: .flow function name
         :param callback: callable array class/method of plugin method
         """
-        
-        self.functions_map[function_name] = callback
+        self.functions_map[function_name] = {**self.functions_map.get('function_name', {}), **callback}
+        print(str(self.functions_map[function_name]))
 
     def resolve_arg(self, arg: list, f_type: str='R', render: bool=False):
         """
@@ -547,7 +547,7 @@ class BBotFunctionsProxy:
         exception = None
 
         try:
-            smokesignal.emit(BBotCore.SIGNAL_CALL_BBOT_FUNCTION_BEFORE, {'name': func_name, 'args': args}) 
+            smokesignal.emit(BBotCore.SIGNAL_CALL_BBOT_FUNCTION_BEFORE, {'name': func_name, 'args': args, 'register_enabled': fmap['register_enabled'], 'data': fmap}) 
 
             response = getattr(fmap['object'], fmap['method'])(args, f_type)            
 

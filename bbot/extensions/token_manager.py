@@ -34,7 +34,7 @@ class TokenManager():
         self.core = core
         self.logger = BBotLoggerAdapter(logging.getLogger('ext.token_mgnt'), self, self.core.bot, '$token')                
 
-        smokesignal.on(BBotCore.SIGNAL_CALL_BBOT_FUNCTION_AFTER, self.function_payment)
+        smokesignal.on(BBotCore.SIGNAL_CALL_BBOT_FUNCTION_BEFORE, self.function_payment)
         smokesignal.on(BBotCore.SIGNAL_GET_RESPONSE_AFTER, self.volley_payment)
         smokesignal.on(BBotCore.SIGNAL_GET_RESPONSE_BEFORE, self.payment_check)
 
@@ -62,6 +62,7 @@ class TokenManager():
                 self.insufficient_funds()
         """        
     def check_period_payment_status(self, subscription_id):
+        self.logger.debug('Checking payment of subscriptionId ' + str(subscription_id))
         lastPaymentDate = self.greenhousedb.get_last_payment_date_by_subscription_id(subscription_id)
         if not lastPaymentDate:
             self.logger.debug('There is no payments')
@@ -80,18 +81,26 @@ class TokenManager():
         if self.core.get_publisher_subscription_type() == TokenManager.SUBSCRIPTION_TYPE_FREE:
             self.logger.debug('Free suscription. No payment needed.')
             return
-        if self.core.get_publisher_subscription_type() == TokenManager.SUBSCRIPTION_TYPE_MONTHLY:
-            self.logger.debug('Monthly suscription. No volley payment needed.')
-            return
-        if self.core.get_publisher_subscription_type() == TokenManager.SUBSCRIPTION_TYPE_PER_USE:
+        
+        # It's not free. so we need publisher id
+        if not self.core.get_publisher_name():
+            self.core.reset_output()
+            self.core.bbot.text('This bot is not free. Please, set publisher token.')
+            raise BBotCoreHalt('Bot halted. Missing publisher id')    
 
+        if self.dotbot.owner_name == self.core.get_publisher_name():
+            self.logger.debug('Publisher is at the same time the bot owner. No need to do payment.')
+            return
+        
+        if self.core.get_publisher_subscription_type() == TokenManager.SUBSCRIPTION_TYPE_MONTHLY:
+            self.logger.debug('Monthly suscription. No volley payment needed.') # It's assumed there is a previous check for monthly payment
+            return
+
+        if self.core.get_publisher_subscription_type() == TokenManager.SUBSCRIPTION_TYPE_PER_USE:
             volley_cost = self.dotbot.per_use_cost
 
             if volley_cost is not None: # register bot volleys only if it has declared volley cost (can be 0)
-                self.logger.debug('Paying volley activity')        
-                if not self.previous_checkings():
-                    return
-
+                self.logger.debug('Paying volley activity')            
                 try:
                     self.token_manager.transfer(self.core.get_publisher_name(), self.dotbot.owner_name, volley_cost)
                 except TokenManagerInsufficientFundsException as e:
@@ -101,39 +110,45 @@ class TokenManager():
         """
         Function payment from bot owner to service owner
         """
-        if data['register_enabled'] is True:
+        if data['register_enabled'] is True: #@TODO we should have a flag for regiter and another for payment
             self.logger.debug('Paying function activity: ' + str(data))        
 
-            if data['data'].get('subscription_type') == TokenManager.SUBSCRIPTION_TYPE_FREE:
-                self.logger.debug('Free suscription. No payment needed.')
-                return
-            elif data['data'].get('subscription_type') == TokenManager.SUBSCRIPTION_TYPE_MONTHLY:
-                self.logger.debug('Monthly suscription. No payment needed.')
-                return
-            elif data['data'].get('subscription_type') == TokenManager.SUBSCRIPTION_TYPE_PER_USE:
-                # get service owner user id form function name
-                service_owner_name = data['data']['owner_name']
-                if self.dotbot.owner_name == service_owner_name:
-                    self.logger.debug('Bot owner is at the same time the service owner. No payment needed.')
-                    return True
+            service_owner_name = data['data']['owner_name']
 
+            if data['data'].get('subscription_type') == TokenManager.SUBSCRIPTION_TYPE_FREE:
+                self.logger.debug('Free component suscription. No payment needed.')
+                return
+            
+            if service_owner_name == self.dotbot.owner_name:
+                self.logger.debug('Bot owner is at the same time the component owner. No need to do payment.')
+                return
+            
+            if data['data'].get('subscription_type') == TokenManager.SUBSCRIPTION_TYPE_MONTHLY:
+                self.logger.debug('Monthly component suscription. Will check payment status')
+                paid = self.check_period_payment_status(data['data']['subscription_id'])
+                if not paid:
+                    self.logger.debug('Bot owner last payment is more than a month ago.')
+                    self.insufficient_funds()
+                else:
+                    self.logger.debug('Subscription payment ok')
+                    return
+                
+            if data['data'].get('subscription_type') == TokenManager.SUBSCRIPTION_TYPE_PER_USE:                
                 try:
                     self.token_manager.transfer(self.dotbot.owner_name, service_owner_name, data['data']['cost'])
                 except TokenManagerInsufficientFundsException as e:
                     self.insufficient_funds()
-            else:
-                self.logger.debug('No subscription type defined. Cancelling payment.')        
-
-    def previous_checkings(self):
+            
+    def previous_checkings(self, owner_name, publisher_name):
         """
         Some previous checks before payment
         """
-        if not self.core.get_publisher_name():
+        if not publisher_name:
             self.core.reset_output()
             self.core.bbot.text('This bot is not free. Please, set publisher token.') # @TODO ?
             raise BBotCoreHalt('Bot halted missing publisher token')    
 
-        if self.dotbot.owner_name == self.core.get_publisher_name():
+        if owner_name == publisher_name:
             self.logger.debug('Publisher is at the same time the bot owner. No need to do payment.')
             return False
         

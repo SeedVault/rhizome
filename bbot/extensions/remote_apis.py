@@ -35,6 +35,7 @@ class RemoteAPIs():
         for serv in services:
             if serv['url'] is not '': # if empty means service is registered from code
                 self.logger.debug('Register service ' + serv['name'])
+                self.logger.debug(str(serv))
                 core.register_function(serv['function_name'], {
                     'object': self,         
                     'method': serv['function_name'], 
@@ -49,7 +50,9 @@ class RemoteAPIs():
                     'user': serv.get('user'),
                     'passwd': serv.get('passwd'),                     
                     'mapped_vars': serv['mapped_vars'],
-                    'register_enabled': True})
+                    'subscription_id': serv['subscriptionId'],
+                    'register_enabled': True
+                })
         
     def get_bot_services(self):
         return self.dotbot.services
