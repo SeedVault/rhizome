@@ -145,9 +145,8 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         :param function_name: .flow function name
         :param callback: callable array class/method of plugin method
         """
-        self.functions_map[function_name] = {**self.functions_map.get('function_name', {}), **callback}
-        print(str(self.functions_map[function_name]))
-
+        self.functions_map[function_name] = {**self.functions_map.get(function_name, {}), **callback}
+        
     def resolve_arg(self, arg: list, f_type: str='R', render: bool=False):
         """
         """        

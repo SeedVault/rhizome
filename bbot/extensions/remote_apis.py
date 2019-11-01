@@ -33,27 +33,33 @@ class RemoteAPIs():
         # get services for the bot    
         services = self.get_bot_services()        
         for serv in services:
-            if serv['url'] is not '': # if empty means service is registered from code
-                self.logger.debug('Register service ' + serv['name'])
-                self.logger.debug(str(serv))
-                core.register_function(serv['function_name'], {
+            self.logger.debug('Register service ' + serv['name'])
+            self.logger.debug(str(serv))
+
+            fmap = {                
+                'owner_name': serv['ownerName'],                
+                'cost': serv['cost'], 
+                'subscription_type': serv['subscriptionType'],
+                'subscription_id': serv['subscriptionId'],
+                'register_enabled': True
+            }
+
+            if serv['url'] is not '': 
+                fmap = {**fmap, **{
                     'object': self,         
                     'method': serv['function_name'], 
-                    'owner_name': serv['ownerName'],
                     'url': serv['url'],
-                    'request_method': serv['method'],
+                    'request_method': serv['method'],                
                     'timeout': serv['timeout'],
-                    'cost': serv['cost'], 
-                    'subscription_type': serv['subscriptionType'],
                     'predefined_vars': serv['predefined_vars'],
                     'headers': serv['headers'], 
                     'user': serv.get('user'),
                     'passwd': serv.get('passwd'),                     
                     'mapped_vars': serv['mapped_vars'],
-                    'subscription_id': serv['subscriptionId'],
-                    'register_enabled': True
-                })
-        
+                }}
+                
+            core.register_function(serv['function_name'], fmap)
+    
     def get_bot_services(self):
         return self.dotbot.services
     
