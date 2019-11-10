@@ -37,10 +37,7 @@ def load_configuration(config_path: str, var_name: str,
     # Load .env file
     env_file = config_path + '/.env_'+ environment_name
     load_dotenv(env_file)
-    if not os.path.isfile(env_file):
-        raise FileNotFoundError(
-            errno.ENOENT, os.strerror(errno.ENOENT), env_file)
-
+    
     # Load YAML file and interpolate its content with environment variables
     config_file = config_path + "/config_" + environment_name + ".yml"
 

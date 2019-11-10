@@ -211,19 +211,16 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         :return: Instance of BBotCore class.
         """
                 
-        if config['bbot_core']['bot_caching'] and dotbot.id in BBotCore.bot_memory_repo.keys():
+        if config['bot_caching'] and dotbot.id in BBotCore.bot_memory_repo.keys():
             print('Bot found in memory')
             bbot = BBotCore.bot_memory_repo[dotbot.id]
-        else:            
-            if dotbot.chatbot_engine['type'] not in config['chatbot_engines']:
-                raise ChatbotEngineNotFoundError()
+        else:                        
             print('Loading bot')
-            bbot = Plugin.load_plugin(config['bbot_core'], dotbot)  
+            bbot = Plugin.load_plugin(config, dotbot)  
 
-            if config['bbot_core']['bot_caching']:
+            if config['bot_caching']:
                 BBotCore.bot_memory_repo[dotbot.id] = bbot # store in memory 
-
-        bbot.environment = config['environment']        
+        
         return bbot
 
     @staticmethod

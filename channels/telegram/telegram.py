@@ -1,24 +1,27 @@
-"""."""
+"""Telegram Channel. LOAD channels.restful.app TO ANSWER TELEGRAM WEBHOOK"""
 import telepot
 import logging
 from urllib.parse import urlparse
-import logging.config
 import time
+import html
+import traceback
+import json
+import os
 
+from bbot.core import BBotCore, ChatbotEngine, BBotException, BBotLoggerAdapter
+from bbot.config import load_configuration
 
 class Telegram:
     """Translates telegram request/response to flow"""
 
     def __init__(self, config: dict, dotbot: dict) -> None:
-        """
-        
+        """        
         """
         self.config = config
         self.dotbot = dotbot
         self.dotdb = None #
         self.api = None
-
-        self.logger = logging.getLogger("channel_telegram")
+        self.logger_level = ''
 
         self.response_type_fnc = {
             'none': self.none,
@@ -30,13 +33,95 @@ class Telegram:
         }
         self.default_text_encoding = 'HTML'
 
+    def init(self, core):
+        self.core = core
+        self.logger = BBotLoggerAdapter(logging.getLogger('channel_telegram'), self, self.core, 'ChannelTelegram')        
+
+    def endpoint(self, request=dict, publisherbot_token=str):
+        print('------------------------------------------------------------------------------------------------------------------------')
+        self.logger.debug(f'Received a Telegram webhook request for publisher token {publisherbot_token}')
+
+        enabled = self.webhook_check(publisherbot_token)
+        if enabled:
+            try:
+                params = request.get_json(force=True)
+                org_id = 1
+
+                # checks if bot is telegram enabled
+                # if not, it delete the webhook and throw an exception
+                
+                # get publisher user id from token
+                pub_bot = self.dotdb.find_publisherbot_by_publisher_token(publisherbot_token)
+                if not pub_bot:
+                    raise Exception('Publisher not found')
+                self.logger.debug('Found publisher: ' + pub_bot.publisher_name + ' - for bot id: ' + pub_bot.bot_id)
+                pub_id = pub_bot.publisher_name
+                
+                # if 'runBot' in params:
+                #    run_bot = self.params['runBot']
+            
+                dotbot = self.dotdb.find_dotbot_by_bot_id(pub_bot.bot_id)                    
+                if not dotbot:
+                    raise Exception('Bot not found')
+                bot_id = dotbot.bot_id
+                # build extended dotbot 
+                dotbot.services = pub_bot.services
+                dotbot.channels = pub_bot.channels
+                dotbot.botsubscription = pub_bot
+                
+                token = pub_bot.channels['telegram']['token']
+                self.set_api_token(token)
+
+                user_id = self.get_user_id(params)
+                telegram_recv = self.get_message(params)
+                self.logger.debug('POST data from Telegram: ' + str(params))
+                bbot_request = self.to_bbot_request(telegram_recv)
+
+                config = load_configuration(os.path.abspath(os.path.dirname(__file__) + "../../../instance"), "BBOT_ENV")
+                bbot = BBotCore.create_bot(config['bbot_core'], dotbot)
+                self.logger.debug('User id: ' + user_id)
+                req = bbot.create_request(bbot_request, user_id, bot_id, org_id, pub_id)                           
+                bbot_response = bbot.get_response(req)
+                
+            except Exception as e:           
+                self.logger.critical(str(e) + "\n" + str(traceback.format_exc()))            
+                if os.environ['BBOT_ENV'] == 'development':
+                    bbot_response = {
+                        'output': [{'text': str(e)}],
+                        'error': {'traceback': str(traceback.format_exc())}
+                        }
+                else:
+                    bbot_response = {'output': [{'text': 'An error happened. Please try again later.'}]}
+                    # @TODO this should be configured in dotbot
+                    # @TODO let bot engine decide what to do?
+
+            self.logger.debug("Response from telegram channel: " + str(bbot_response))
+            self.send_response(bbot_response)
+
+    def webhook_check(self, publisherbot_token):
+
+        pb = self.dotdb.find_publisherbot_by_publisher_token(publisherbot_token)
+
+        if pb.channels.get('telegram'):
+            return True
+
+        self.logger.warning(f'Deleting invalid Telegram webhook for publisher bot token: {publisherbot_token} - publisher id: ' + pb.publisher_name)
+        self.set_api_token(pb.channels['telegram']['token'])
+        delete_ret = self.api.deleteWebhook()
+        if delete_ret:
+            self.logger.warning("Successfully deleted.")
+            return False
+            #raise Exception('Received a telegram webhook request on a telegram disabled bot. The webhook was deleted now.')
+        else:
+            error = "Received a telegram webhook request on a telegram disabled bot and couldn't delete the invalid webhook"
+            self.logger.error(error)
+            raise Exception(error)
+
     def set_api_token(self, token: str):
         self.api = telepot.Bot(token)
 
-
     def to_bbot_request(self, request: str) -> str:
         return {'text': request}
-
 
     def get_webhook_url(self) -> str:
         return self.config['webhook_uri']
@@ -120,7 +205,7 @@ class Telegram:
             if audio.get('subtitle'):
                 caption += f"\n{audio['subtitle']}"
 
-        #self.telegram.sendAudio(self.user_id, audio['uri'], caption=caption, parse_mode='Markdown', duration=None, performer=None,
+        #self.self.sendAudio(self.user_id, audio['uri'], caption=caption, parse_mode='Markdown', duration=None, performer=None,
         #   title="Title?", disable_notification=None, reply_to_message_id=None, reply_markup=None)
         self.api.sendVoice(self.user_id, audio['url'], caption=caption, parse_mode=self.default_text_encoding, duration=None,
                            disable_notification=None, reply_to_message_id=None, reply_markup=None)
@@ -221,7 +306,7 @@ class Telegram:
     def buttons_process(self, bbot_output: dict) -> dict:
         """
         Groups text and buttons for Telegram API.
-        BBot response specification do not groups buttons and texts, so his is a process to do it for Telegram.
+        BBot response specification do not groups buttons and texts, so his is a process to do it for self.
 
         Buttons needs special treatment because Telegram ask for mandatory text output with it
         so we need to find and send text output at the same time
@@ -248,7 +333,7 @@ class Telegram:
                     elif next_btn.get('text'):  # when it founds a text, stops looking for more buttons
                         break
 
-                bbot_output[idx] = {  # modifying button object for telegram.send_button()
+                bbot_output[idx] = {  # modifying button object for self.send_button()
                     'buttons': {
                         'text': buttons_text,
                         'buttons': buttons
