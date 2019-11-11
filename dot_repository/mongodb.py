@@ -1,29 +1,55 @@
 """MongoDB adapter."""
 import os
 import datetime
+import bcrypt
+import logging
+import pymongo
 from pymongo import MongoClient, ASCENDING
 from bson.objectid import ObjectId
-import bcrypt
-from .models import User, Organization, DotBotContainer, DotBot, PublisherBot, Token, DotFlowContainer, AuthenticationError, RemoteAPI
 
+from .models import User, Organization, DotBotContainer, DotBot, PublisherBot, Token, DotFlowContainer, AuthenticationError, RemoteAPI
+from bbot.core import BBotLoggerAdapter, BBotCore
 
 class DotRepository():
     """MongoDB client."""
 
+    mongo_clients = {} # mongo clients cache
+
     def __init__(self, config: dict, dotbot: dict=None) -> None:
         """Initialize the connection."""
 
-        self.connection_timeout = 5000
+        self.config = config
 
+        self.logger_level = ''
+
+        self.connection_timeout = 5000
+        
         if 'uri' not in config:
             raise RuntimeError("FATAL ERR: Missing config var uri")
-        uri = config['uri']
+            
+    def init(self, core: BBotCore):
+        """
+        :param bot:
+        :return:
+        """
+        self.core = core
+        self.logger = BBotLoggerAdapter(logging.getLogger('dotrepository'), self, self.core, 'dotrepository')      
+
+        uri = self.config['uri']        
+        uri_parts = pymongo.uri_parser.parse_uri(uri)
+        database_name = uri_parts['database']
+                       
+        self.logger.debug("Initializing mongodb with URI " + uri.replace(uri_parts['password'], '********'))        
+        if uri in DotRepository.mongo_clients.keys(): # look in cache
+            self.logger.debug("Found mongo client already active in memory")
+            self.mongo = DotRepository.mongo_clients[uri]
+            return
+        
         client = MongoClient(uri, serverSelectionTimeoutMS=self.connection_timeout)
-        parts = uri.split("/")
-        last_part = parts.pop()
-        parts = last_part.split("?")
-        database_name = parts[0]
+        
         self.mongo = client[database_name]
+
+        DotRepository.mongo_clients[uri] = client[database_name]
 
     def restart_from_scratch(self):
         """Drop and recreate each collection in database."""
