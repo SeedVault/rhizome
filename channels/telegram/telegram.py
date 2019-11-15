@@ -7,6 +7,7 @@ import html
 import traceback
 import json
 import os
+import cgi
 
 from bbot.core import BBotCore, ChatbotEngine, BBotException, BBotLoggerAdapter
 from bbot.config import load_configuration
@@ -87,7 +88,7 @@ class Telegram:
                 self.logger.critical(str(e) + "\n" + str(traceback.format_exc()))            
                 if os.environ['BBOT_ENV'] == 'development':
                     bbot_response = {
-                        'output': [{'text': str(e)}],
+                        'output': [{'text': cgi.escape(str(e))}],
                         'error': {'traceback': str(traceback.format_exc())}
                         }
                 else:

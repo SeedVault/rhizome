@@ -47,7 +47,7 @@ class TokenManagerSeedWallet():
         
         try:
             aw = r.json()
-        except json.decoder.JSONDecodeError:
+        except json.decoder.JSONDecodeError: 
             raise Exception('Seed Wallet error response: ' + r.text)
         
         if r.status_code != 200:
