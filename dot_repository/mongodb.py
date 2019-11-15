@@ -39,7 +39,7 @@ class DotRepository():
         uri_parts = pymongo.uri_parser.parse_uri(uri)
         database_name = uri_parts['database']
                        
-        self.logger.debug("Initializing mongodb with URI " + uri.replace(uri_parts['password'], '********'))        
+        self.logger.debug("Initializing mongodb with URI " + uri.replace(str(uri_parts['password']), '********'))        
         if uri in DotRepository.mongo_clients.keys(): # look in cache
             self.logger.debug("Found mongo client already active in memory")
             self.mongo = DotRepository.mongo_clients[uri]

@@ -301,7 +301,23 @@
           data: JSON.stringify(data),
           type: 'POST'})
           .done(function(response) {
-            var data = response
+              process(response)
+            
+          })
+          .fail(function(xhr, status, error) {            
+            console.log('error: Status = ' + status + ', error message = ' + error + "\nResponse = " + xhr.responseText);
+            process(xhr.responseJSON)
+          })
+          .always(function() {
+            // Do nothing
+          });
+
+      });
+
+    });
+
+    function process(response) {
+      var data = response
             console.log("RESPONSE:")
 
             if (data.error) {
@@ -339,17 +355,7 @@
                 showBotResponse()
               }
             }
-          })
-          .fail(function(xhr, status, error) {
-            alert('oops? Status = ' + status + ', error message = ' + error + "\nResponse = " + xhr.responseText);
-          })
-          .always(function() {
-            // Do nothing
-          });
-
-      });
-
-    });
+    }
   </script>
 </body>
 </html>

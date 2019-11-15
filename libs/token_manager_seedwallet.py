@@ -1,5 +1,6 @@
 """Manages tokens with the Seed Wallet"""
 import logging
+import json
 #from requests_futures.sessions import FuturesSession
 import requests
 from bbot.core import BBotLoggerAdapter
@@ -44,7 +45,11 @@ class TokenManagerSeedWallet():
         }
         r = self.do_request('post', 'send', payload)
         
-        aw = r.json()
+        try:
+            aw = r.json()
+        except json.decoder.JSONDecodeError:
+            raise Exception('Seed Wallet error response: ' + r.text)
+        
         if r.status_code != 200:
             # check if the error is insufficient funds
             if r.status_code == 422 and aw['errors'].get('amount', {}).get('message') == 'domain.wallet.validation.insufficient_funds':
@@ -76,6 +81,6 @@ class TokenManagerSeedWallet():
             r =  requests.post(self.seed_wallet_url + method, data=payload, headers=headers)
         if type == 'get':
             r =  requests.get(self.seed_wallet_url + method, params=payload, headers=headers)
-        self.logger.debug('Seed Wallet response: Code: ' + str(r.status_code) + ': ' + str(r.json())[0:300])
+        self.logger.debug('Seed Wallet response: Code: ' + str(r.status_code) + ': ' + str(r.text[0:300]))
         return r
         

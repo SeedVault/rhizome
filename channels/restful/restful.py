@@ -115,8 +115,7 @@ class Restful:
                 self.logger.critical(str(e) + "\n" + str(traceback.format_exc()))            
                 http_code = 500            
                 
-
-            if os.environ['BBOT_ENV'] == 'development':
+            if os.environ['BBOT_ENV'] == 'development':                
                 bbot_response = {
                     'output': [{'text': str(e)}], #@TODO use bbot.text() 
                     'error': {'traceback': str(traceback.format_exc())}
