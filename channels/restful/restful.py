@@ -3,6 +3,7 @@ import html
 import traceback
 import json
 import os
+import cgi
 
 from bbot.core import BBotCore, ChatbotEngine, BBotException, BBotLoggerAdapter
 from bbot.config import load_configuration
@@ -117,7 +118,7 @@ class Restful:
                 
             if os.environ['BBOT_ENV'] == 'development':                
                 bbot_response = {
-                    'output': [{'text': str(e)}], #@TODO use bbot.text() 
+                    'output': [{'text': cgi.escape(str(e))}], #@TODO use bbot.text() 
                     'error': {'traceback': str(traceback.format_exc())}
                     }
             else:
