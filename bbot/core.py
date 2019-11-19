@@ -211,6 +211,7 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         :return: Instance of BBotCore class.
         """
                 
+        print("5")
         if config['bot_caching'] and dotbot.id in BBotCore.bot_memory_repo.keys():
             print('Bot found in memory')
             bbot = BBotCore.bot_memory_repo[dotbot.id]

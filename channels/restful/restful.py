@@ -44,12 +44,15 @@ class Restful:
             if not pub_bot:
                 raise Exception('Publisher not found')
             self.logger.debug('Found subscription id: ' + str(pub_bot.id) + ' - publisher name: ' + pub_bot.publisher_name + ' - for bot name: ' + pub_bot.bot_name + ' - bot id:' + pub_bot.bot_id)
+            
             pub_id = pub_bot.publisher_name
+            print("1")
             
             # if 'runBot' in params:
             #    run_bot = self.params['runBot']
         
             dotbot = self.dotdb.find_dotbot_by_bot_id(pub_bot.bot_id)                    
+            print("2")
             if not dotbot:
                 raise Exception('Bot not found')
             bot_id = dotbot.bot_id
@@ -57,9 +60,11 @@ class Restful:
             dotbot.services = pub_bot.services
             dotbot.channels = pub_bot.channels
             dotbot.botsubscription = pub_bot
-
+            print("3")
             self.dotbot = dotbot # needed for methods below
             config = load_configuration(os.path.abspath(os.path.dirname(__file__) + "../../../instance"), "BBOT_ENV")
+            print("4")
+
             bot = BBotCore.create_bot(config['bbot_core'], dotbot)
             self.core = bot
             input_text = ""
