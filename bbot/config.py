@@ -5,6 +5,8 @@ import re
 import yaml
 from dotenv import load_dotenv
 
+config_cache = {}
+
 def load_configuration(config_path: str, var_name: str,
                        environment_name: str = "",) -> dict:
     """
@@ -21,7 +23,7 @@ def load_configuration(config_path: str, var_name: str,
     :raises RuntimeError if environment variable 'var_name' is not defined.
     :raises FileNotFoundError if the configuration file is not found.
     :return: A dictionary of configuration settings.
-    """
+    """    
     if not environment_name:
         if not var_name in os.environ:
             raise RuntimeError(
@@ -33,6 +35,12 @@ def load_configuration(config_path: str, var_name: str,
 
     # Remember the path
     os.environ["BBOT_CONFIG_PATH"] = config_path
+
+    # Check if config is cached
+    config_cache_key = config_path + '|' + environment_name
+    if (config_cache_key in config_cache.keys()):        
+        print("BBot config found in cache")
+        return config_cache[config_cache_key]    
 
     # Load .env file
     env_file = config_path + '/.env_'+ environment_name
@@ -59,4 +67,6 @@ def load_configuration(config_path: str, var_name: str,
     yaml.add_constructor('!env_unquoted', env_unquoted_constructor)
     
     with open(config_file, 'r') as ymlfile:
-        return yaml.load(ymlfile, Loader=yaml.Loader) # https://github.com/yaml/pyyaml/issues/265
+        config = yaml.load(ymlfile, Loader=yaml.Loader) # https://github.com/yaml/pyyaml/issues/265
+        config_cache[config_cache_key] = config
+        return config

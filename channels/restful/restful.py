@@ -46,6 +46,7 @@ class Restful:
             self.logger.debug('Found subscription id: ' + str(pub_bot.id) + ' - publisher name: ' + pub_bot.publisher_name + ' - for bot name: ' + pub_bot.bot_name + ' - bot id:' + pub_bot.bot_id)
             
             pub_id = pub_bot.publisher_name
+
             print("1")
             
             # if 'runBot' in params:
@@ -62,7 +63,7 @@ class Restful:
             dotbot.botsubscription = pub_bot
             print("3")
             self.dotbot = dotbot # needed for methods below
-            config = load_configuration(os.path.abspath(os.path.dirname(__file__) + "../../../instance"), "BBOT_ENV")
+            config = load_configuration(os.path.abspath(os.path.dirname(__file__) + "../../../instance"), "BBOT_ENV")            
             print("4")
 
             bot = BBotCore.create_bot(config['bbot_core'], dotbot)
