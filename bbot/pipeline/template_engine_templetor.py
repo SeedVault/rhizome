@@ -58,18 +58,24 @@ class TemplateEngineTemplator():
         if hasattr(self.core.bot, 'session'):
             session_vars = self.core.bot.session.get_var(self.core.bot.user_id)
 
+        t_globals = session_vars
+        # add predefined vars from publishers
+        if hasattr(self.dotbot, 'botsubscription'):
+            if hasattr(self.dotbot.botsubscription, 'predefined_vars'):
+                t_globals = {**t_globals, **self.dotbot.botsubscription.predefined_vars}
+
         # get custom functions from extensions
         c_functions = self.get_functions()        
-        t_globals = {**session_vars, **c_functions}
+        t_globals = {**t_globals, **c_functions}
 
         self.logger.debug('Rendering template: "' + str(string) + '"')
         templator_obj = Template(string, globals=t_globals)
         try:
             response = str(templator_obj())
         except NameError as e:
-            err_msg = 'Tried to run a not defined function in render: ' + str(e)
+            err_msg = 'Template error: ' + str(e)
             self.core.logger.debug(err_msg)            
-            raise BBotException(err_msg)
+            raise BBotException({'message': err_msg})
 
         if response[-1:] == '\n':       # Templator seems to add a trailing \n, remove it
             response = response[:-1]

@@ -82,6 +82,7 @@ class PublisherBot():
         self.updated_at = None
         self.channels = {}
         self.services = []
+        self.predefined_vars = {}
 
 class DotFlowContainer():
     """Represent a DotFlow container object."""

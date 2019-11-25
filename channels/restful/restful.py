@@ -117,7 +117,7 @@ class Restful:
 
         except Exception as e:          
             if isinstance(e, BBotException): # BBotException means the issue is in bot userland, not rhizome
-                http_code = 200                                
+                http_code = 200                                                
             else:
                 self.logger.critical(str(e) + "\n" + str(traceback.format_exc()))            
                 http_code = 500            
