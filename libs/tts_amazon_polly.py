@@ -203,8 +203,8 @@ class TTSAmazonPolly():
         text = text.replace(']', ', close sqare brackets, ')
         text = text.replace('{', ', open curly brackets, ')
         text = text.replace('}', ', close curly brackets, ')
-        text = text.replace('(', ', open parenthesis, ')
-        text = text.replace(')', ', close parenthesis, ')        
+        text = text.replace('(', ', ')
+        text = text.replace(')', ', ')        
         text = text.replace('&quot', ', quotes, ')
         text = text.replace('&#x27;', '')        
         text = text.replace('$', ', $ symbol, ')        # @TODO this should convert values like $123 into '123 dollars'
