@@ -431,7 +431,10 @@ class DotRepository():
         pub_bot.updated_at = result['updatedAt']
         pub_bot.channels = result['channels']
         pub_bot.services = result['services']
-        pub_bot.predefined_vars = result['predefined_vars']
+        try:
+            pub_bot.predefined_vars = result['predefined_vars']
+        except KeyError:
+            pub_bot.predefined_vars = {}
         return pub_bot
 
     ### DOTFLOWS
