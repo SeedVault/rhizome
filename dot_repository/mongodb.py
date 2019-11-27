@@ -362,6 +362,10 @@ class DotRepository():
         dotbot.per_use_cost = result['perUseCost']
         dotbot.per_month_cost = result['perMonthCost']
         dotbot.updated_at = result['updatedAt']
+        try:
+            dotbot.tts = result['tts']
+        except KeyError:
+            dotbot.tts = {}
         return dotbot
 
     def find_one_dotbot(self, filters: dict) -> DotBot:

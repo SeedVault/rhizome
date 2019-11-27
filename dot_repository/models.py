@@ -60,14 +60,9 @@ class DotBot():
         self.chatbot_engine = {}
         self.per_use_cost = 0
         self.per_month_cost = 0
-        self.updated_at = None
-        self.enabled_locales = []
-        self.default_locale = ''
-        self.tts_voice_id = None
-        self.default_tts_voice_id = 0
-        self.tts_time_scale = None
-        self.default_tts_time_scale = 100
-
+        self.updated_at = None        
+        self.tts = {}
+        
 class PublisherBot():
     """Represent a PublisherBot container object."""
 

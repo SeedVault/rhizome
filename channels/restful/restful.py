@@ -91,10 +91,10 @@ class Restful:
                     bbot_response['errors'].append({'message': 'No TTS engine configured for this bot.'})                      
                 else:
                     #retrieve TTS audio generated from all texts from bbot output                    
-                    self.tts.voice_locale = self.get_locale()
+                    self.tts.voice_locale = self.get_tts_locale()
                     self.tts.voice_id = self.get_tts_voice_id()
                     all_texts = BBotCore.get_all_texts_from_output(bbot_response['output'])                
-                    bbot_response['tts']['url'] = self.tts.get_speech_audio_url(all_texts, self.params.get('ttsTimeScale', 100))           
+                    bbot_response['tts']['url'] = self.tts.get_speech_audio_url(all_texts, self.get_tts_timescale())           
 
             if self.params.get('actrEnabled', None): 
                 bbot_response['actr'] = {}
@@ -104,9 +104,9 @@ class Restful:
                     all_texts = BBotCore.get_all_texts_from_output(bbot_response['output'])                                    
                     bbot_response['actr'] = self.actr.get_actr(
                         all_texts,                         
-                        self.get_locale(),
+                        self.get_tts_locale(),
                         self.get_tts_voice_id(), 
-                        self.get_timescale())
+                        self.get_tts_timescale())
 
 
             if self.params.get('debugEnabled') is None:                
@@ -135,40 +135,46 @@ class Restful:
         self.logger.debug("Response from restful channel: " + str(bbot_response))
         return {'response': json.dumps(bbot_response), 'status': http_code, 'mimetype': 'application/json'}
 
-    def get_locale(self) -> str:
-        """Returns locale for tts service. It first check on params if no value provided it fallsback to http header."""
-        dotbot_lc = self.dotbot.enabled_locales or []
-        
-        # get current locale
-        param_lc = self.params.get('locale', None) 
-        curr_lc = None
-        if param_lc:
-            if param_lc in dotbot_lc:
-                curr_lc = param_lc  # we got locale based on client choice
-        else:  
-            # check http header locale to see if it's enabled by the bot
-            # @TODO
-            curr_lc = None
-
-        if not curr_lc:
-            #client locale is not enabled by the bot. check if there is any language available for it anyway
-            #@TODO
-
-            curr_lc = self.dotbot.default_locale or 'en_US'
-
-        if self.params.get('locale'):
-            curr_lc = self.params['locale']
-
-        return curr_lc
+    def get_tts_locale(self) -> str:
+        """Returns locale for tts service"""
+        if self.dotbot.tts.get('locale') is not None:
+            return self.dotbot.tts['locale']
+        # from request 
+        if self.params.get('ttsLocale') is not None:
+            return self.params['ttsLocale']
+        # If there is no voice set, check fo default in DotBot
+        if self.dotbot.tts.get('defaultLocale') is not None:
+            return self.dotbot.tts['defaultLocale']
+        # If there is not even defaultVoiceId, try with hardcoded default value
+        return 'en_US'
 
     def get_tts_voice_id(self) -> str:
-        """Returns bbot voice id. First check on params. Default value is 1"""
-        return self.dotbot.tts_voice_id or self.params.get('ttsVoiceId', None) or 0
+        """Returns bot voice id"""
+        # DotBot VoiceId has higher priority. external configurations can't change this
+        if self.dotbot.tts.get('voiceId') is not None:
+            return self.dotbot.tts['voiceId']
+        # from request 
+        if self.params.get('ttsVoiceId') is not None:
+            return self.params['ttsVoiceId']
+        # If there is no voice set, check fo default in DotBot
+        if self.dotbot.tts.get('defaultVoiceId') is not None:
+            return self.dotbot.tts['defaultVoiceId']
+        # If there is not even defaultVoiceId, try with hardcoded default value
+        return 0
 
-    def get_timescale(self) -> str: #@TODO we might need a method to get values like this
-        """Returns bbot voice id. First check on params. Default value is 1"""
-        return self.dotbot.tts_time_scale or self.params.get('ttsTimeScale', None) or 100
-
+    def get_tts_timescale(self) -> str: #@TODO we might need a method to get values like this
+        """Returns bot tts time scale"""
+        # DotBot timeScale has higher priority. external configurations can't change this
+        if self.dotbot.tts.get('timeScale') is not None:
+            return self.dotbot.tts['timeScale']
+        # from request 
+        if self.params.get('ttsTimeScale') is not None:
+            return self.params['ttsTimeScale']
+        # If there is no time scale set, check fo default in DotBot
+        if self.dotbot.tts.get('defaultTimeScale') is not None:
+            return self.dotbot.tts['defaultTimeScale']
+        # If there is not even default set, try with hardcoded default value
+        return 100
 
     def get_http_locale(self) -> str:
         """ @TODO """
