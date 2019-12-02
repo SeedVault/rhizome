@@ -45,6 +45,11 @@ pip install --upgrade pip
 pip install git+https://github.com/pypa/pipenv.git
 ```
 
+Note: If you have issues with `pip install` try this:
+```
+python3 -m pip install pipenv
+```
+
 ## Running console channel
 
 ```
