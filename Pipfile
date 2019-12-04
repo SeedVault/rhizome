@@ -29,6 +29,7 @@ ibm-watson = "*"
 "web.py" = "==0.40.dev1"
 python-box = "*"
 pyaml = "*"
+python-socketio = "*"
 
 [dev-packages]
 pytest = "*"
