@@ -46,8 +46,9 @@ class WatsonAssistant(ChatbotEngine):
 
         input_text = request['input']['text']
         user_id = request['user_id']
+        bot_id = request['bot_id']
 
-        session = self.get_bot_session(user_id)
+        session = self.get_bot_session(user_id, bot_id)
         session_id = session['session_id']
 
         response = {}
@@ -84,7 +85,7 @@ class WatsonAssistant(ChatbotEngine):
             input={'text': rinput['text']}
         ).get_result()
 
-    def get_bot_session(self, user_id: str, renew: bool=False):
+    def get_bot_session(self, user_id: str, bot_id: str, renew: bool=False):
         """
         Returns session data both session id and context
         If there is no session on db we create one
@@ -93,10 +94,13 @@ class WatsonAssistant(ChatbotEngine):
         :param renew: A bool to indicate if we need to renew the session id (watson asisstant has a timeout and we have to get a new one when that happens)
         :return: A dict 
         """
-        session = self.dotdb.get_watson_assistant_session(user_id) or {'session_id': None, 'context': {}}
+        session = self.dotdb.get_watson_assistant_session(user_id, bot_id)
 
         if session:
             self.logger.debug("Found old session: " + str(session))
+        else:
+            session = {'session_id': None, 'context': {}}
+            self.logger.debug("No session found. Generating a new one.")
         
         if renew:               
             session['session_id'] = None
@@ -105,7 +109,7 @@ class WatsonAssistant(ChatbotEngine):
             session_id = self.service.create_session(assistant_id = self.dotbot.chatbot_engine['assistantId']).get_result()['session_id']                            
             session['session_id'] = session_id
             self.logger.debug("Created new session: " + session_id)               
-            self.dotdb.set_watson_assistant_session(user_id, session_id, session['context']) # context might have data if we are renewing session
+            self.dotdb.set_watson_assistant_session(user_id, bot_id, session_id, session['context']) # context might have data if we are renewing session
                     
         return session
 
