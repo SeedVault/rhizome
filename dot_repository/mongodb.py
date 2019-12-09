@@ -711,25 +711,27 @@ class DotRepository():
 
 ## WATSON ASSISTANT SESSION AND CONTEXT
 
-    def get_watson_assistant_session(self, user_id: str):
+    def get_watson_assistant_session(self, user_id: str, bot_id: str):
         """
         Returns user session id and context 
 
         :param: user_id: A string with user id
+        :param bot_id: A string with bot id
         :return: A dict
         """
-        r = self.mongo.watson_assistant_bot_data.find_one({'user_id': user_id})
+        r = self.mongo.watson_assistant_bot_data.find_one({'user_id': user_id, 'bot_id': bot_id})
         return r
 
-    def set_watson_assistant_session(self, user_id: str, session_id: str, context: dict={}):
+    def set_watson_assistant_session(self, user_id: str, bot_id: str, session_id: str, context: dict={}):
         """
         Stores user session id and context
 
         :param user_id: A string with user id
+        :param bot_id: A string with bot id
         :param session_id: A string with session id
         :param context: A dict with context
         """
-        self.mongo.watson_assistant_bot_data.update({'user_id': user_id}, {'user_id': user_id, 'session_id': session_id, 'context': context}, upsert = True)
+        self.mongo.watson_assistant_bot_data.update({'user_id': user_id, 'bot_id': bot_id}, {'user_id': user_id, 'bot_id': bot_id, 'session_id': session_id, 'context': context}, upsert = True)
 
 
 ## GREENHOUSE SUBSCRIPTION_PAYMENTS
