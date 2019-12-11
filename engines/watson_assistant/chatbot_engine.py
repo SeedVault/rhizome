@@ -58,7 +58,7 @@ class WatsonAssistant(ChatbotEngine):
                                                                     # @TODO I don't know how to test this before. try to improve it.
             # create a new session (but dont delete context!) and try again  
             self.logger.debug('Session has timed out. Try to create a new one')
-            session = self.get_bot_session(user_id, True)
+            session = self.get_bot_session(user_id, bot_id, True)
             session_id = session['session_id']    
             response = self.get_assistant_response(session_id, request['input'])
 
