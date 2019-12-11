@@ -74,8 +74,8 @@ class RasaServer(ChatbotEngine):
         
     def socketio_server(self, msg):
         server_url = self.dotbot.chatbot_engine['serverUrl']
-        user_message_evt = self.dotbot.chatbot_engine.get('userMessageEvt', 'user_uttered')
-        bot_message_evt = self.dotbot.chatbot_engine.get('botMessageEvt', 'bot_uttered')
+        user_message_evt = self.dotbot.chatbot_engine.get('userMessageEvt') or 'user_uttered'
+        bot_message_evt = self.dotbot.chatbot_engine.get('botMessageEvt') or 'bot_uttered'
         
         sio = socketio.Client()
         
