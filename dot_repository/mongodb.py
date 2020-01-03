@@ -734,6 +734,34 @@ class DotRepository():
         self.mongo.watson_assistant_bot_data.update({'user_id': user_id, 'bot_id': bot_id}, {'user_id': user_id, 'bot_id': bot_id, 'session_id': session_id, 'context': context}, upsert = True)
 
 
+## DIRECTLINE SESSION
+
+    def get_directline_session(self, user_id: str, bot_id: str):
+        """
+        Returns conversation id and watermark
+
+        :param: user_id: A string with user id
+        :param bot_id: A string with bot id
+        :return: A dict
+        """
+        r = self.mongo.directline_bot_data.find_one({'user_id': user_id, 'bot_id': bot_id})
+        if r:
+            return [r['conversation_id'], r['watermark']]
+        return None
+
+    def set_directline_session(self, user_id: str, bot_id: str, conversation_id: str, watermark: int):
+        """
+        Stores conversation id and watermark
+
+        :param user_id: A string with user id
+        :param bot_id: A string with bot id
+        :param conversation_id: A string with conversation id
+        :param watermar: An integer with watermark
+        """
+        self.mongo.directline_bot_data.update({'user_id': user_id, 'bot_id': bot_id}, {
+            'user_id': user_id, 'bot_id': bot_id, 'conversation_id': conversation_id, 'watermark': watermark}, upsert = True)
+
+
 ## GREENHOUSE SUBSCRIPTION_PAYMENTS
 
     def get_last_payment_date_by_subscription_id(self, subscription_id):

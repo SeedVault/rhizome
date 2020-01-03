@@ -65,21 +65,18 @@ class ChatScript(ChatbotEngine):
             connection.close()
             response = BBotCore.create_response(msg)
 
-        except Exception as e:
-            self.logger.critical(str(e) + "\n" + str(traceback.format_exc()))
-            raise Exception(e)
+        except Exception as e:            
+            raise BBotException(e)
 
         self.logger.debug("Chatscript response: " + str(response))
 
         # check if chatscript is an error, it should add obb flagging it
         if not len(response):
-            msg = "Empty response from ChatScript server"
-            self.logger.critical(msg)
-            raise Exception(msg)
+            msg = "Empty response from ChatScript server"            
+            raise BBotException(msg)
         if response == "No such bot.\r\n":
-            msg = "There is no such bot on this ChatScript server"
-            self.logger.critical(msg)
-            raise Exception(msg)
+            msg = "There is no such bot on this ChatScript server"            
+            raise BbotException(msg)
 
         # convert chatscript response to bbot response specification
         self.to_bbot_response(response)

@@ -18,7 +18,7 @@ class BBotResponseOutput():
         self.core = None
         self.logger = None
 
-        self.functions = ['text', 'image', 'video', 'audio', 'button', 'outputHasText']
+        self.functions = ['text', 'outputHasText', 'imBack', 'suggestedAction', 'imageCard', 'videoCard', 'audioCard', 'heroCard']
 
     def init(self, core: BBotCore):
         """
@@ -64,24 +64,33 @@ class BBotResponseOutput():
                 return True
         return False    
         
-    def image(self, args, f_type):
-        """
-        Returns BBot image output object
-
-        :param args:
-        :param f_type:
-        :return:
-        """
+    def imageCard(self, args, f_type):
         try:
-            image_url = self.core.resolve_arg(args[0], f_type, True)
+            image = self.core.resolve_arg(args[0], f_type, True)
         except IndexError:
-            raise BBotException({'code': 210, 'function': 'image', 'arg': 0, 'message': 'Image URL in arg 0 is missing.'})
+            raise BBotException({'code': 210, 'function': 'imageCard', 'arg': 0, 'message': 'imageCard image is missing.'})        
+        try:
+            title = self.core.resolve_arg(args[1], f_type, True)
+        except IndexError:
+            title = ""
+        try:
+            buttons = self.core.resolve_arg(args[2], f_type, True)
+        except IndexError:
+            buttons = []
+            
+        self.heroCard([image, title, buttons], 'R')        
 
-        bbot_response = {'image': {'url': image_url}}
-        self.core.add_output(bbot_response)
-        return bbot_response
+    def videoCard(self, args, f_type):
+        card = self._mediaCard(args, f_type)
+        card['contentType'] = "application/vnd.microsoft.card.video"
+        self.core.add_output(card)
 
-    def video(self, args, f_type):
+    def audioCard(self, args, f_type):
+        card = self._mediaCard(args, f_type)
+        card['contentType'] = "application/vnd.microsoft.card.audio"
+        self.core.add_output(card)
+
+    def _mediaCard(self, args, f_type):
         """
         Returns BBot video object
 
@@ -90,65 +99,133 @@ class BBotResponseOutput():
         :return:
         """
         try:
-            video_url = self.core.resolve_arg(args[0], f_type, True)
+            media_url = self.core.resolve_arg(args[0], f_type, True)
         except IndexError:
-            raise BBotException({'code': 220, 'function': 'video', 'arg': 0, 'message': 'Video URL in arg 0 is missing.'})
-
-        bbot_response = {'video': {'url': video_url}}
-        self.core.add_output(bbot_response)
-        return bbot_response
-
-    def audio(self, args, f_type):
-        """
-        Returns BBot audio object
-
-        :param args:
-        :param f_type:
-        :return:
-        """
+            raise BBotException({'code': 210, 'function': 'mediaCard', 'arg': 0, 'message': 'Media URL is missing.'})        
         try:
-            audio_url = self.core.resolve_arg(args[0], f_type, True)
+            title = self.core.resolve_arg(args[1], f_type, True)
         except IndexError:
-            raise BBotException({'code': 230, 'function': 'audio', 'arg': 0, 'message': 'Audio URL in arg 0 is missing.'})
-
-        bbot_response = {'audio': {'url': audio_url}}
-        self.core.add_output(bbot_response)
+            title = ""
+        try:
+            subtitle = self.core.resolve_arg(args[2], f_type, True)
+        except IndexError:
+            subtitle = ""
+        try:
+            text = self.core.resolve_arg(args[3], f_type, True)
+        except IndexError:
+            text = ""            
+        try:
+            buttons = self.core.resolve_arg(args[4], f_type, True)
+        except IndexError:
+            buttons = []
+        try:
+            image_url = self.core.resolve_arg(args[5], f_type, True)
+        except IndexError:
+            image_url = ""
+        
+        bbot_response = {          
+            "contentType": "",
+            "content": {
+                "subtitle": subtitle,
+                "text": text,
+                "image": image_url,
+                "title": title,
+                "media": [
+                {
+                    "url": media_url
+                }
+                ],
+                "buttons": buttons
+            }
+        }
+        
         return bbot_response
 
-    def button(self, args, f_type):
+    def suggestedAction(self, args, f_type):
+        errors = []
+        try:
+            actions = self.core.resolve_arg(args[0], f_type)
+        except IndexError:
+            errors.append({'code': 240, 'function': 'suggestedAction', 'arg': 0, 'message': 'suggestedAction actions missing.'})
+        if errors:
+            raise BBotException(errors)
+
+        bbot_response = {
+            "contentType": "application/vnd.microsoft.card.adaptive",
+            "content": {
+                "$schema": "https://adaptivecards.io/schemas/adaptive-card.json",
+                "type": "AdaptiveCard",
+                "version": "1.0",
+                "actions": actions
+            }
+        }
+        self.core.add_output(bbot_response)        
+
+    def imBack(self, args, f_type):
         """
-        Returns BBot button output object
+        Returns BBot imBack object (must be used within suggestedAction)
 
         :param args:
         :return:
         """
         errors = []
         try:
-            button_id = self.core.resolve_arg(args[0], f_type)
+            title = self.core.resolve_arg(args[0], f_type)
         except IndexError:
-            errors.append({'code': 240, 'function': 'button', 'arg': 0, 'message': 'Button ID missing.'})
+            errors.append({'code': 240, 'function': 'imBack', 'arg': 0, 'message': 'imBack title missing.'})
 
         try:
-            text = self.core.resolve_arg(args[1], f_type)
+            value = self.core.resolve_arg(args[1], f_type)
         except IndexError:
-            errors.append({'code': 241, 'function': 'button', 'arg': 1, 'message': 'Button text missing.'})
-
-        try:
-            postback = self.core.resolve_arg(args[2], f_type)
-        except IndexError:
-            postback = None  # postback is optional #@TODO revisit this. buttonId is not a good idea after all
+            value = title
 
         if errors:
             raise BBotException(errors)
 
         bbot_response = {
-                'button': {
-                    'id': button_id,
-                    'text': text
-                }
+            "type": "Action.Submit",
+            "title": title,
+            "data": {
+                "imBack": value
             }
-        if postback:
-            bbot_response['button']['postback'] = postback
-
-        self.core.add_output(bbot_response)
+        }                    
         return bbot_response
+
+    def heroCard(self, args, f_type):
+        """
+        Returns BBot hero card 
+
+        :param args:
+        :return:
+        """
+        errors = []        
+        try:
+            image = self.core.resolve_arg(args[0], f_type)
+        except IndexError:
+            errors.append({'code': 240, 'function': 'imBack', 'arg': 0, 'message': 'heroCard image missing.'})
+        try:
+            title = self.core.resolve_arg(args[1], f_type)
+        except IndexError:
+            title = ""
+        try:
+            buttons = self.core.resolve_arg(args[2], f_type)
+        except IndexError:
+            buttons = []
+        if errors:
+            raise BBotException(errors)
+
+
+        bbot_response = {
+            "contentType": "application/vnd.microsoft.card.hero",
+            "content": {
+            "title": title,
+            "images": [
+                {
+                    "url": image
+                }
+            ],
+            "buttons": buttons
+          }
+        }
+        self.core.add_output(bbot_response)
+

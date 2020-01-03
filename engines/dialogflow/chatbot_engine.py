@@ -65,6 +65,8 @@ class DialogFlow(ChatbotEngine):
 
         response = self.session_client.detect_intent(
             session=session, query_input=query_input)
+
+        self.logger.debug('Response: ' + str(response))
                 
         self.logger.debug('Detected intent: {} (confidence: {})'.format(
             response.query_result.intent.display_name,

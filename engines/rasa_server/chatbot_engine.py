@@ -48,7 +48,7 @@ class RasaServer(ChatbotEngine):
             if 'text' in r.keys():
                 self.core.bbot.text(r['text'])
             if 'image' in r.keys():
-                self.core.bbot.image(r['image'])
+                self.core.bbot.imageCard(r['image'])
             
         return self.response
         

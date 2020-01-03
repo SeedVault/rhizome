@@ -38,6 +38,8 @@ class Telegram:
         self.core = core
         self.logger = BBotLoggerAdapter(logging.getLogger('channel_telegram'), self, self.core, 'ChannelTelegram')        
 
+        self.logger.debug("Listening Telegram from path: " + self.get_webhook_path())
+
     def endpoint(self, request=dict, publisherbot_token=str):
         print('------------------------------------------------------------------------------------------------------------------------')
         self.logger.debug(f'Received a Telegram webhook request for publisher token {publisherbot_token}')

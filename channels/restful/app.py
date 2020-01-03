@@ -19,7 +19,7 @@ logging.config.dictConfig(config['logging'])
 
 restful = Plugin.load_plugin(config['channel_restful'])
 telegram = Plugin.load_plugin(config['channel_telegram'])
-print("Listening Telegram from path: " + telegram.get_webhook_path())
+botframework = Plugin.load_plugin(config['channel_botframework'])
 
 @app.route('/restful_channel', methods=['POST'])
 @cross_origin(supports_credentials=True)
@@ -39,7 +39,12 @@ def telegram_endpoint(publisherbot_token):  # pylint: disable=W0612
     telegram.endpoint(request, publisherbot_token)
     # be sure to respond 200 code. telegram will keep sending it if doesnt get it
     return jsonify(success=True)
-    
+
+@app.route(botframework.get_webhook_path(), methods=['POST'])
+def botframework_endpoint(publisherbot_token): # pylint: disable=W0612    
+    response = botframework.endpoint(request, publisherbot_token)
+    return jsonify(success=True)
+
 @app.route('/ping')
 def ping(): # pylint: disable=W0612
     print('Received ping request')

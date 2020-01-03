@@ -190,6 +190,7 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         """      
         Appends a new output object
         """
+        self.logger.debug('Adding to output: ' + str(bbot_output_obj))
         self.response['output'].append(bbot_output_obj)
 
     def reset_output(self):
@@ -316,7 +317,7 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
         Get response based on the request
         """
         self.reset()
-        self.request = request
+        self.request = request    
         self.user_id = request.get('user_id', '')
         self.pub_id = request.get('pub_id', '')
          
