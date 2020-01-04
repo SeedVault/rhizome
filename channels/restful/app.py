@@ -18,10 +18,11 @@ app.config.from_mapping(config)
 logging.config.dictConfig(config['logging'])
 
 restful = Plugin.load_plugin(config['channel_restful'])
+print("Listening RESTful from path: " + restful.get_endpoint_path())
 telegram = Plugin.load_plugin(config['channel_telegram'])
 print("Listening Telegram from path: " + telegram.get_webhook_path())
 
-@app.route('/restful_channel', methods=['POST'])
+@app.route(restful.get_endpoint_path(), methods=['POST'])
 @cross_origin(supports_credentials=True)
 def restful_endpoint(): # pylint: disable=W0612    
     response = restful.endpoint(request)
