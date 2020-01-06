@@ -11,7 +11,6 @@ from bbot.config import load_configuration
 
 """Create and configure an instance of the application."""
 app = Flask(__name__)
-CORS(app, support_credentials=True)
 
 config = load_configuration(os.path.abspath(os.path.dirname(__file__) + "../../../instance"), "BBOT_ENV")
 app.config.from_mapping(config)
@@ -23,7 +22,6 @@ telegram = Plugin.load_plugin(config['channel_telegram'])
 print("Listening Telegram from path: " + telegram.get_webhook_path())
 
 @app.route(restful.get_endpoint_path(), methods=['POST'])
-@cross_origin(supports_credentials=True)
 def restful_endpoint(): # pylint: disable=W0612    
     response = restful.endpoint(request)
     return Response(response['response'], status=response['status'], mimetype=response['mimetype'])
