@@ -135,6 +135,9 @@ class Restful:
         self.logger.debug("Response from restful channel: " + str(bbot_response))
         return {'response': json.dumps(bbot_response), 'status': http_code, 'mimetype': 'application/json'}
 
+    def get_endpoint_path(self) -> str:
+        return self.config['endpoint_path']
+
     def get_tts_locale(self) -> str:
         """Returns locale for tts service"""
         if self.dotbot.tts.get('locale') is not None:
