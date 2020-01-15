@@ -41,7 +41,7 @@ class TokenManagerSeedWallet():
         payload = {
             'username': fromUsername,
             'to': toUsername,
-            'amount': amount
+            'amount': str(amount)
         }
         r = self.do_request('post', 'send', payload)
         
@@ -75,10 +75,10 @@ class TokenManagerSeedWallet():
     def do_request(self, type: str, method: str, payload: str=dict):
         """
         """
-        headers = {'Wallet-API-Key': self.seed_wallet_api_key}
+        headers = {'API-INTEGRATION-KEY': self.seed_wallet_api_key, "Content-type": "application/json"}
         self.logger.debug('Requesting to Seed Wallet at url ' + self.seed_wallet_url + method)
-        if type == 'post':
-            r =  requests.post(self.seed_wallet_url + method, data=payload, headers=headers)
+        if type == 'post':            
+            r =  requests.post(self.seed_wallet_url + method, json=payload, headers=headers)
         if type == 'get':
             r =  requests.get(self.seed_wallet_url + method, params=payload, headers=headers)
         self.logger.debug('Seed Wallet response: Code: ' + str(r.status_code) + ': ' + str(r.text[0:300]))
