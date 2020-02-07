@@ -162,8 +162,8 @@ class DialogFlow(ChatbotEngine):
             self.logger.debug('Platform "' + str(platform) + '" is invalid. Setting platform to default value: ' +str(self.dotbot.chatbot_engine.get('defaultPlatform')))
             platform = self.dotbot.chatbot_engine.get('defaultPlatform') 
         
-        if platform not in self.available_platforms.values():                                        
-            raise Exception("Dialoflowg platform not supported: " + str(platform))
+        #if platform not in self.available_platforms.values():                                        
+        #    raise Exception("Dialoflowg platform not supported: " + str(platform))
 
         return platform
 
