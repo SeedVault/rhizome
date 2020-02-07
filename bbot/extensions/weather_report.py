@@ -32,7 +32,7 @@ class WeatherReport():
         self.logger = BBotLoggerAdapter(logging.getLogger('core_fnc.weather'), self, self.core.bot, '$weather')                
 
         self.method_name = 'weather'
-        self.accuweather_text = 'Weather forecast provided by Accuweather'
+        self.accuweather_text = 'Weather forecast provided by'
         self.accuweather_image_url = 'https://static.seedtoken.io/AW_RGB.png'
         
         core.register_function('weather', {'object': self, 'method': self.method_name, 'cost': 0.1, 'register_enabled': True})
@@ -76,7 +76,7 @@ class WeatherReport():
 
         canonical_location = st[0]['LocalizedName'] + ', ' + st[0]['Country']['LocalizedName']
         self.logger.debug('Canonical location: ' + canonical_location)
-        self.logger.debug('Requeting Accuweather current conditions...')
+        self.logger.debug('Requesting Accuweather current conditions...')
         r = requests.get(
             f'http://dataservice.accuweather.com/currentconditions/v1/{location_key}?apikey={self.accuweather_api_key}&details=false')
         self.logger.debug('Accuweather response: ' + str(r.json())[0:300])
@@ -119,4 +119,4 @@ class WeatherReport():
                 if not self.core.bbot.outputHasText(self.accuweather_text):
                     # adds accuweather logo to the bots response
                     self.core.bbot.text(self.accuweather_text)
-                    self.core.bbot.image(self.accuweather_image_url)            
+                    self.core.bbot.imageCard(self.accuweather_image_url)            

@@ -37,7 +37,10 @@ class Restful:
             bot_id = self.params.get('botId')
             org_id = self.params.get('orgId')
             pub_token = self.params.get('pubToken')        
+            channel_id = self.params.get('channelId')
             input_params = self.params['input']
+
+            input_params['channelPlatform'] = 'bbot_restful_channel'
             
             # get publisher user id from token
             pub_bot = self.dotdb.find_publisherbot_by_publisher_token(pub_token)
@@ -73,7 +76,8 @@ class Restful:
                 # bot.get_response(input_type, input_value)
             #    _ = input_type
             #    input_text = input_text + input_value
-            req = bot.create_request(input_params, user_id, bot_id, org_id, pub_id)
+            req = bot.create_request(
+                input_params, user_id, bot_id, org_id, pub_id, channel_id)
             bbot_response = {}
             http_code = 500     
             bbot_response = bot.get_response(req)
@@ -123,12 +127,12 @@ class Restful:
                 http_code = 500            
                 
             if os.environ['BBOT_ENV'] == 'development':                
-                bbot_response = {
-                    'output': [{'text': cgi.escape(str(e))}], #@TODO use bbot.text() 
+                bbot_response = {                    
+                    'output': [{'type': 'message', 'text': cgi.escape(str(e))}], #@TODO use bbot.text() 
                     'error': {'traceback': str(traceback.format_exc())}
                     }
             else:
-                bbot_response = {'output': [{'text': 'An error happened. Please try again later.'}]}
+                bbot_response = {'output': [{'type': 'message', 'text': 'An error happened. Please try again later.'}]}
                 # @TODO this should be configured in dotbot
                 # @TODO let bot engine decide what to do?
             

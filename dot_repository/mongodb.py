@@ -734,7 +734,7 @@ class DotRepository():
         self.mongo.watson_assistant_bot_data.update({'user_id': user_id, 'bot_id': bot_id}, {'user_id': user_id, 'bot_id': bot_id, 'session_id': session_id, 'context': context}, upsert = True)
 
 
-## DIRECTLINE SESSION
+## MICROSOFT DIRECTLINE SESSION
 
     def get_directline_session(self, user_id: str, bot_id: str):
         """
@@ -761,6 +761,14 @@ class DotRepository():
         self.mongo.directline_bot_data.update({'user_id': user_id, 'bot_id': bot_id}, {
             'user_id': user_id, 'bot_id': bot_id, 'conversation_id': conversation_id, 'watermark': watermark}, upsert = True)
 
+## AZURE ACTIVE DIRECTORY ACCESS TOKEN
+
+    def get_azure_ad_access_token(self, bot_id: str):
+        r = self.mongo.azure_ad_access_token.find_one({'bot_id': bot_id})
+        return r
+
+    def set_azure_ad_access_token(self, bot_id: str, access_token: str, expire_date: int):
+        self.mongo.azure_ad_access_token.update({'bot_id': bot_id}, {'bot_id': bot_id, 'access_token': access_token, 'expire_date': expire_date}, upsert = True)
 
 ## GREENHOUSE SUBSCRIPTION_PAYMENTS
 

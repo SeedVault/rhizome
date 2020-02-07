@@ -1,7 +1,6 @@
 """"""
 import random
 import logging
-import box
 from bbot.core import ChatbotEngine, BBotException, BBotCore, BBotLoggerAdapter
 
 class BBotResponseOutput():
@@ -19,7 +18,7 @@ class BBotResponseOutput():
         self.core = None
         self.logger = None
 
-        self.functions = ['text', 'outputHasText', 'imBack', 'openUrl', 'suggestedActions', 'imageCard', 'thumbnailCard', 'videoCard', 'audioCard', 'heroCard']
+        self.functions = ['text', 'outputHasText', 'imBack', 'suggestedAction', 'imageCard', 'videoCard', 'audioCard', 'heroCard']
 
     def init(self, core: BBotCore):
         """
@@ -52,10 +51,7 @@ class BBotResponseOutput():
             msg_idx = 0
 
         msg = self.core.resolve_arg(args[msg_idx], f_type, True)  # no need to resolve arg before this
-        bbot_response = {
-            'type': 'message',
-            'text': str(msg)
-            }
+        bbot_response = {'text': str(msg)}
         self.core.add_output(bbot_response)
         return bbot_response
 
@@ -64,29 +60,37 @@ class BBotResponseOutput():
         Returns True or False if the output has the specified text
         """
         for o in self.core.response['output']:            
-            if o.get('text') and o['text'] == args[0]:
+            if list(o.keys())[0] is 'text':
                 return True
-        return False
-
-    def thumbnailCard(self, args, f_type):        
-        card = self._mediaCard(args, f_type, "images")
-        card['attachments'][0]['contentType'] = "application/vnd.microsoft.card.thumbnail"
-        self.core.add_output(card)
-
+        return False    
+        
     def imageCard(self, args, f_type):
-        return self.thumbnailCard(args, f_type)
+        try:
+            image = self.core.resolve_arg(args[0], f_type, True)
+        except IndexError:
+            raise BBotException({'code': 210, 'function': 'imageCard', 'arg': 0, 'message': 'imageCard image is missing.'})        
+        try:
+            title = self.core.resolve_arg(args[1], f_type, True)
+        except IndexError:
+            title = ""
+        try:
+            buttons = self.core.resolve_arg(args[2], f_type, True)
+        except IndexError:
+            buttons = []
+            
+        self.heroCard([image, title, buttons], 'R')        
 
     def videoCard(self, args, f_type):
         card = self._mediaCard(args, f_type)
-        card['attachments'][0]['contentType'] = "application/vnd.microsoft.card.video"
+        card['contentType'] = "application/vnd.microsoft.card.video"
         self.core.add_output(card)
 
     def audioCard(self, args, f_type):
         card = self._mediaCard(args, f_type)
-        card['attachments'][0]['contentType'] = "application/vnd.microsoft.card.audio"
+        card['contentType'] = "application/vnd.microsoft.card.audio"
         self.core.add_output(card)
 
-    def _mediaCard(self, args, f_type, media_elm: str="media"):
+    def _mediaCard(self, args, f_type):
         """
         Returns BBot video object
 
@@ -119,31 +123,25 @@ class BBotResponseOutput():
         except IndexError:
             image_url = ""
         
-        bbot_response = {
-            'type': 'message',
-            'attachments': [
-                {          
-                    "contentType": "",
-                    "content": {
-                        "subtitle": subtitle,
-                        "text": text,
-                        "image": image_url,
-                        "title": title,
-                        media_elm: [
-                            {
-                                "url": media_url
-                            }
-                        ],
-                        "buttons": buttons
-                    }
+        bbot_response = {          
+            "contentType": "",
+            "content": {
+                "subtitle": subtitle,
+                "text": text,
+                "image": image_url,
+                "title": title,
+                "media": [
+                {
+                    "url": media_url
                 }
-                
-            ]
+                ],
+                "buttons": buttons
+            }
         }
         
         return bbot_response
 
-    def suggestedActions(self, args, f_type):
+    def suggestedAction(self, args, f_type):
         errors = []
         try:
             actions = self.core.resolve_arg(args[0], f_type)
@@ -152,22 +150,16 @@ class BBotResponseOutput():
         if errors:
             raise BBotException(errors)
 
-        if type(actions) is not list:
-            actions = [actions]
-
-        for i in range(len(actions)):                
-            if type(actions[i]) is not box.Box: # if it's not a imBack object (dict are box.Box class here)
-                if type(actions[i]) is str: # and it's a string, apply it as imBack
-                    actions[i] = self.imBack(actions[i])
-                else:
-                    raise BBotException("suggestedActions function accepts strings or imBack objects only")
-
         bbot_response = {
-            'suggestedActions': {
-                'actions': actions
+            "contentType": "application/vnd.microsoft.card.adaptive",
+            "content": {
+                "$schema": "https://adaptivecards.io/schemas/adaptive-card.json",
+                "type": "AdaptiveCard",
+                "version": "1.0",
+                "actions": actions
             }
         }
-        self.core.add_output(bbot_response, True)  # Adds suggestion to last output
+        self.core.add_output(bbot_response)        
 
     def imBack(self, args, f_type):
         """
@@ -181,6 +173,7 @@ class BBotResponseOutput():
             title = self.core.resolve_arg(args[0], f_type)
         except IndexError:
             errors.append({'code': 240, 'function': 'imBack', 'arg': 0, 'message': 'imBack title missing.'})
+
         try:
             value = self.core.resolve_arg(args[1], f_type)
         except IndexError:
@@ -189,39 +182,14 @@ class BBotResponseOutput():
         if errors:
             raise BBotException(errors)
 
-        response = {
-            "type": "imBack",
+        bbot_response = {
+            "type": "Action.Submit",
             "title": title,
-            "value": value            
+            "data": {
+                "imBack": value
+            }
         }                    
-        return response
-
-    def openUrl(self, args, f_type):
-        """
-        Returns BBot openUrl object (must be used within suggestedAction)
-
-        :param args:
-        :return:
-        """
-        errors = []
-        try:
-            title = self.core.resolve_arg(args[0], f_type)
-        except IndexError:
-            errors.append({'code': 240, 'function': 'openUrl', 'arg': 0, 'message': 'openUrl title missing.'})
-        try:
-            value = self.core.resolve_arg(args[1], f_type)
-        except IndexError:
-            value = title
-
-        if errors:
-            raise BBotException(errors)
-
-        response = {
-            "type": "openUrl",
-            "title": title,
-            "value": value            
-        }                    
-        return response
+        return bbot_response
 
     def heroCard(self, args, f_type):
         """
@@ -234,44 +202,30 @@ class BBotResponseOutput():
         try:
             image = self.core.resolve_arg(args[0], f_type)
         except IndexError:
-            errors.append({'code': 240, 'function': 'heroCard', 'arg': 0, 'message': 'heroCard image missing.'})
+            errors.append({'code': 240, 'function': 'imBack', 'arg': 0, 'message': 'heroCard image missing.'})
         try:
             title = self.core.resolve_arg(args[1], f_type)
         except IndexError:
-            title = None
+            title = ""
         try:
-            subtitle = self.core.resolve_arg(args[2], f_type, True)
+            buttons = self.core.resolve_arg(args[2], f_type)
         except IndexError:
-            subtitle = None
-        try:
-            text = self.core.resolve_arg(args[3], f_type, True)
-        except IndexError:
-            text = None      
-        try:
-            buttons = self.core.resolve_arg(args[4], f_type)
-        except IndexError:
-            buttons = None
+            buttons = []
         if errors:
             raise BBotException(errors)
 
-        content = {}
-        content['images'] = [{'url': image}]        
-        if title:
-            content['title'] = title
-        if subtitle:
-            content['subtitle'] = subtitle
-        if text:
-            content['text'] = text
-        if buttons:
-            content['buttons'] = buttons
 
         bbot_response = {
-            'type': 'message',
-            'attachments': [
+            "contentType": "application/vnd.microsoft.card.hero",
+            "content": {
+            "title": title,
+            "images": [
                 {
-                    "contentType": "application/vnd.microsoft.card.hero",
-                    "content": content
-                }        
-            ]
+                    "url": image
+                }
+            ],
+            "buttons": buttons
+          }
         }
         self.core.add_output(bbot_response)
+

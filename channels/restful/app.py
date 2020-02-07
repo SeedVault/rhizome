@@ -48,7 +48,8 @@ def botframework_endpoint(publisherbot_token): # pylint: disable=W0612
 
 @app.route('/ping')
 def ping(): # pylint: disable=W0612
-    print('Received ping request')
-    return "[BBOT RESTFUL SERVER] pong!\n"
+    print('Received ping request')    
+    return "[BBOT RESTFUL SERVER] pong!\n" + str(request)
+
 
 

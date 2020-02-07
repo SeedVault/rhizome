@@ -1,5 +1,6 @@
 """BBot engine based on DirectLine API."""
 import logging
+import copy
 import requests
 import json
 from bbot.core import BBotCore, ChatbotEngine, ChatbotEngineError, BBotLoggerAdapter, BBotException
@@ -46,34 +47,24 @@ class DirectLine(ChatbotEngine):
 
     def to_bbot_response(self, response: list) -> dict:        
         bbot_response = []
-        for r in response['activities']:
-            if r['from']['id'] != self.user_id:                
-                if r['type'] == 'message':
-                    
-                    if r.get('text'):                                       
-                        self.core.bbot.text(r['text'])
+        resp = copy.deepcopy(response)
 
-                    if r.get('suggestedActions'):
-                        actions = []
-                        for a in r['suggestedActions']['actions']:
-                            if a['type'] == 'imBack':
-                                actions.append(self.core.bbot.imBack(a['title'], a['value']))
-                        self.core.bbot.suggestedAction(actions)
-                                        
-                    if r.get('attachments'):
-                        for a in r['attachments']:
-                            if a['contentType'].startswith('application/vnd.microsoft.card'):
-                                self.core.add_output(a) # bbot works internally with microsoft cards so we are not converting
-                                                        # NOTE: it's easier to maintain ms cards internally to have two-way communications from ms botbuilder
-                                                        # to botframework channel. 
+        for r in resp['activities']:            
+            # filter not needed data
+            elms = ['id', 'conversation', 'conversationId', 'timestamp', 'channelId', 'inputHint', 'from', 'recipient', 'replyToId', 'serviceUrl']
+            for i in elms:
+                if i in r:
+                    del r[i]
 
+            self.core.add_output(r)
+                                
     def init_session(self):
         if not self.conversation_id or not self.watermark:
             # look on database first            
             self.logger.debug('Looking for conversation id and watermark in database')
             session = self.dotdb.get_directline_session(self.user_id, self.bot_id)                        
-            if not session:
-                # not in database, ask for a new one and store it                
+            if not session:                
+                self.logger.debug('Not in database, ask for a new one and store it')
                 self.conversation_id = self.directline_get_new_conversation_id()
                 self.watermark = "" # it will not filter by watermark so we can get initial welcome message from the bot
                 self.dotdb.set_directline_session(self.user_id, self.bot_id, self.conversation_id, self.watermark)
@@ -98,7 +89,6 @@ class DirectLine(ChatbotEngine):
 
         raise BBotException('Response error code: ' + str(response.status_code))
         
-
     def directline_send_message(self, text):        
         url = self.base_url + '/conversations/' + self.conversation_id + '/activities'
         payload = {
@@ -108,18 +98,20 @@ class DirectLine(ChatbotEngine):
             'text': text
         }        
         self.logger.debug('DirectLine sending message with payload: ' +  str(payload))
-        response = requests.post(url, headers=self.directline_get_headers(), json=payload)
+        self.logger.debug('url: ' + url)
+        response = requests.post(url, headers=self.directline_get_headers(), data=json.dumps(payload))
         self.logger.debug('DirectLine response: ' + response.text)
         if response.status_code == 200:            
             return response.json()
 
-        raise BBotException('Response error code: ' + str(response.status_code))
+        raise BBotException('Response error code: ' + str(response.status_code) + ' - Message: ' + response.text)
         
 
     def directline_get_message(self):        
         url = self.base_url + '/conversations/' + self.conversation_id + '/activities?watermark=' + self.watermark
         payload = {'conversationId': self.conversation_id}
         self.logger.debug('DirectLine getting message with payload: ' + str(payload))
+        self.logger.debug('url: ' + url)
         response = requests.get(url, headers=self.directline_get_headers(), json=payload)
         self.logger.debug('DirectLine response: ' + response.text)
         if response.status_code == 200:

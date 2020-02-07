@@ -45,9 +45,8 @@ class TemplateEngineTemplator():
         Renders any string with configured bbot custom functions and bot session vars
         """                
         # We still need a way to know if a string is a template or not, but Templator don't need enclosing
-        # So for Templator, just enclose the whole string with {{ }} for BBot to know it is a template
-        if re.search('({%).*(%})|({{.*}})', string) is None:
-            self.logger.debug('Nothing to render')
+        # So for Templator, just enclose the whole string with {{ }} for BBot to know it is a template        
+        if re.search('({%).*(%})|({{.*}})', string) is None:            
             return string
         string = string.replace('{{', '')
         string = string.replace('}}', '')
@@ -93,12 +92,22 @@ class TemplateEngineTemplator():
         Runs as pipeline process
         """        
         for k, r in enumerate(self.core.response['output']):            
-            response_type = list(r)[0]
-            if response_type == 'text': #@TODO this should traverse the whole dict not just text
-                response = r['text']
-                self.core.response['output'][k]['text'] = self.render(response)
-
-        
+            def recursion(d): # will do a recursion through all data structure
+                for k, v in d.items():
+                    if isinstance(v, dict):
+                        recursion(v)
+                    elif isinstance(v, list):
+                        for i in v:
+                            recursion(i)
+                    elif isinstance(v, str): # render only if it's string
+                        d[k] = self.render(d[k])
+                    elif isinstance(v, bool):
+                        pass
+                    else:
+                        self.logger.error('Found an unexpected data type in output: type:' + str(type(v)) + ' - value: ' + str(v))
+            recursion(r)
+                                
+                        
 
         
 

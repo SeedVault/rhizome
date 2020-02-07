@@ -8,6 +8,7 @@ import traceback
 import json
 import os
 import cgi
+from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
 
 from bbot.core import BBotCore, ChatbotEngine, BBotException, BBotLoggerAdapter
 from bbot.config import load_configuration
@@ -23,16 +24,15 @@ class Telegram:
         self.dotdb = None #
         self.api = None
         self.logger_level = ''
+        
+        self.default_text_encoding = 'HTML' #@TODO move this to dotbot
 
-        self.response_type_fnc = {
-            'none': self.none,
-            'text': self.send_text,
-            'image': self.send_image,
-            'video': self.send_video,
-            'audio': self.send_audio,
-            'buttons': self.send_buttons
-        }
-        self.default_text_encoding = 'HTML'
+        self.emOpen = "<b>"
+        self.emClose = "</b>"
+        if self.default_text_encoding == 'markdown':
+            self.emOpen = "*"
+            self.emClose = "*"
+
 
     def init(self, core):
         self.core = core
@@ -80,27 +80,33 @@ class Telegram:
                 self.logger.debug('POST data from Telegram: ' + str(params))
                 bbot_request = self.to_bbot_request(telegram_recv)
 
+                channel_id = 'telegram'
+                                
                 config = load_configuration(os.path.abspath(os.path.dirname(__file__) + "../../../instance"), "BBOT_ENV")
                 bbot = BBotCore.create_bot(config['bbot_core'], dotbot)
                 self.logger.debug('User id: ' + user_id)
-                req = bbot.create_request(bbot_request, user_id, bot_id, org_id, pub_id)                           
+                req = bbot.create_request(bbot_request, user_id, bot_id, org_id, pub_id, channel_id)                    
                 bbot_response = bbot.get_response(req)
-                
+                                
+                self.send_response(bbot_response)
+                self.logger.debug("Response from telegram channel: " + str(bbot_response))
+
             except Exception as e:           
                 self.logger.critical(str(e) + "\n" + str(traceback.format_exc()))            
                 if os.environ['BBOT_ENV'] == 'development':
-                    bbot_response = {
-                        'output': [{'text': cgi.escape(str(e))}],
+                    bbot_response = {                        
+                        'output': [{'type': 'message', 'text': cgi.escape(str(e))}],
                         'error': {'traceback': str(traceback.format_exc())}
                         }
                 else:
-                    bbot_response = {'output': [{'text': 'An error happened. Please try again later.'}]}
+                    bbot_response = {'output': [{'type': 'message', 'text': 'An error happened. Please try again later.'}]}
                     # @TODO this should be configured in dotbot
                     # @TODO let bot engine decide what to do?
+                
+                self.logger.debug("Response from telegram channel: " + str(bbot_response))
+                self.send_response(bbot_response)
 
-            self.logger.debug("Response from telegram channel: " + str(bbot_response))
-            self.send_response(bbot_response)
-
+            
     def webhook_check(self, publisherbot_token):
 
         pb = self.dotdb.find_publisherbot_by_publisher_token(publisherbot_token)
@@ -141,90 +147,94 @@ class Telegram:
         # @TODO check if we can avoid sending separate api request for each text if there are more than one
 
         bbot_output = bbot_response['output']
-
-        t_output = self.buttons_process(bbot_output)
-
+        
         # Iterate through bbot responses
-        for br in t_output:
-            response_type = list(br.keys())[0]
-            if callable(self.response_type_fnc.get(response_type)):
-                self.response_type_fnc[response_type](br)
-            else:
-                self.logger.warning('Unrecognized BBot output response "' + response_type)
+        for br in bbot_output:
+            buttons = None
+            if 'suggestedActions' in br: # this must be first
+                buttons = br['suggestedActions']['actions']
 
-    def none(self, arg):
-        """
+            if 'text' in br:
+                    self.send_text(br['text'], buttons)
+            if 'attachments' in br:
+                for a in br['attachments']:
+                    if a['contentType'] == 'application/vnd.microsoft.card.audio':
+                        self.send_audio_card(a['content'], buttons)
+                    if a['contentType'] == 'application/vnd.microsoft.card.video':
+                        self.send_video_card(a['content'], buttons)
+                    if a['contentType'] in ['application/vnd.microsoft.card.hero', 'application/vnd.microsoft.card.thumbnail', 'image/png', 'image/jpeg']:                        
+    
+                        self.send_image_hero_card(a['content'], buttons)
 
-        :return:
-        """
-        pass
 
-    def send_text(self, text: list):
+    def _get_keyboard(self, buttons: list):
+        if not buttons or len(buttons) == 0:
+            return None
+        telegram_buttons = []
+        for button in buttons:
+            if button['type'] == 'imBack':
+                telegram_buttons.append([InlineKeyboardButton(text=button['title'], callback_data=button['value'])])
+            #@TODO add button with link    
+        keyboard = InlineKeyboardMarkup(inline_keyboard=telegram_buttons)        
+        return keyboard
+        
+    def send_text(self, text: list, buttons: list):
         """
         Sends text to telegram
-        """
-        text = text['text']
-        if type(text) is str and text:
-            self.api.sendMessage(self.user_id, text, parse_mode=self.default_text_encoding)
-        else:
-            self.logger.error("Trying to send empty message to Telegram")
+        """        
+        if len(text) == 0:
+            text = "..."
 
-    def send_image(self, image: dict):
-        """
-        Sends image to telegram
-        """
-        image = image['image']
-        caption = None
-        if image.get('title'):
-            caption = f"*{image['title']}*"
-            if image.get('subtitle'):
-                caption += f"\n{image['subtitle']}"
+        keyboard = self._get_keyboard(buttons)
+        self.api.sendMessage(self.user_id, text, parse_mode=self.default_text_encoding, reply_markup=keyboard)
+            
+    
+    def send_image_hero_card(self, card: dict, buttons: list):
+        url = None
+        if card.get('media'):
+            url = card['media'][0]['url']
+        elif card.get('images'):
+            url = card['images'][0]['url']            
+        caption = self._common_media_caption(card)
+        keyboard = self._get_keyboard(buttons)
+        self.logger.debug('Sending image to Telegram: url: ' + url)
+        self.api.sendPhoto(self.user_id, url, caption=caption, parse_mode=self.default_text_encoding, disable_notification=None, 
+            reply_to_message_id=None, reply_markup=keyboard)
 
-        self.api.sendPhoto(self.user_id, image['url'], caption=caption, parse_mode=self.default_text_encoding,
-                           disable_notification=None, reply_to_message_id=None, reply_markup=None)
+    def send_audio_card(self, card: dict, buttons: list):
+        url = card['media'][0]['url']
+        caption = self._common_media_caption(card)
+        keyboard = self._get_keyboard(buttons)
+        self.logger.debug('Sending audio to Telegram: url: ' + url)
+        self.api.sendAudio(self.user_id, url, caption=caption, parse_mode=self.default_text_encoding, duration=None, performer=None,
+           title=None, disable_notification=None, reply_to_message_id=None, reply_markup=keyboard)
+
+    def send_video_card(self, card: dict, buttons: list):
+        url = card['media'][0]['url']
+        caption = self._common_media_caption(card)
+        keyboard = self._get_keyboard(buttons)
+        self.logger.debug('Sending video to Telegram: url: ' + url)
+        self.api.sendVideo(self.user_id, url, duration=None, width=None, height=None, caption=caption, parse_mode=self.default_text_encoding, 
+            supports_streaming=None, disable_notification=None, reply_to_message_id=None, reply_markup=keyboard)
+
+    def _common_media_caption(self, card: dict):        
         
-    def send_video(self, video: dict):
-        """
-        Sends video to telegram
-        """
-        video = video['video']
-        caption = None
-        if video.get('title'):
-            caption = f"*{video['title']}*"
-            if video.get('subtitle'):
-                caption += f"\n{video['subtitle']}"
-
-        self.api.sendVideo(self.user_id, video['url'], duration=None, width=None, height=None,
-                           caption=caption, parse_mode=self.default_text_encoding, supports_streaming=None, disable_notification=None, reply_to_message_id=None, reply_markup=None)
-
-    def send_audio(self, audio: dict):
-        """
-        Sends audio to telegram
-        """
-        audio = audio['audio']
-        caption = None
-        if audio.get('title'):
-            caption = f"*{audio['title']}*"
-            if audio.get('subtitle'):
-                caption += f"\n{audio['subtitle']}"
-
-        #self.self.sendAudio(self.user_id, audio['uri'], caption=caption, parse_mode='Markdown', duration=None, performer=None,
-        #   title="Title?", disable_notification=None, reply_to_message_id=None, reply_markup=None)
-        self.api.sendVoice(self.user_id, audio['url'], caption=caption, parse_mode=self.default_text_encoding, duration=None,
-                           disable_notification=None, reply_to_message_id=None, reply_markup=None)
-
-    def send_buttons(self, buttons: dict):
-        """
-        Sends buttons to telegram
-        """
-        buttons = buttons['buttons']
-        from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
-        telegram_buttons = []
-        for button in buttons['buttons']:
-            telegram_buttons.append([InlineKeyboardButton(text=button['text'], callback_data=button['postback'])])
-        keyboard = InlineKeyboardMarkup(inline_keyboard=telegram_buttons)        
-        self.api.sendMessage(self.user_id, buttons['text'], reply_markup=keyboard)
-
+        title = None  # Seems title arg in sendAudio() is not working...? we add it in caption then
+        caption = ""
+        if card.get('title'):
+            caption += f"{self.emOpen}{card['title']}{self.emClose}"
+        if card.get('subtitle'):
+            if len(caption) > 0:
+                caption += "\n"
+            caption += card['subtitle']
+        if card.get('text'):
+            if len(caption) > 0:
+                caption += "\n\n"
+            caption += card['text']
+        
+        if len(caption) == 0:
+            caption = None
+        return caption
 
     ### Request
 
@@ -234,7 +244,8 @@ class Telegram:
             return self.user_id
 
         if request.get('callback_query'): # callback from a button click
-            return str(request['callback_query']['from']['id'])
+            self.user_id = str(request['callback_query']['from']['id'])
+            return self.user_id
 
     def get_message(self, request: dict):
         if request.get('message'): #regular text
@@ -305,41 +316,3 @@ class Telegram:
                     self.logger.debug('Invalid Telegram token') # This might happen when the token is invalid. We need to ignore and ontinue
 
                 time.sleep(sleep_time)
-
-    def buttons_process(self, bbot_output: dict) -> dict:
-        """
-        Groups text and buttons for Telegram API.
-        BBot response specification do not groups buttons and texts, so his is a process to do it for self.
-
-        Buttons needs special treatment because Telegram ask for mandatory text output with it
-        so we need to find and send text output at the same time
-
-        :param bbot_output: BBot response output
-        :return: Telegram buttons object
-        """
-        for idx, br in enumerate(bbot_output):
-            response_type = list(br.keys())[0]
-
-            if response_type == 'button':
-                # look for previous text
-                if bbot_output[idx - 1].get('text'):
-                    buttons_text = bbot_output[idx - 1]['text']
-                    bbot_output[idx - 1] = {'none': []}  # will be send with buttons
-                else:
-                    buttons_text = ''
-                # look for next buttons
-                buttons = [br['button']]
-                for idx2, next_btn in enumerate(bbot_output[idx + 1:len(bbot_output)]):
-                    if next_btn.get('button'):
-                        buttons.append(next_btn['button'])
-                        bbot_output[idx2 + idx + 1] = {'none': []}  # will be added with the grouped buttons
-                    elif next_btn.get('text'):  # when it founds a text, stops looking for more buttons
-                        break
-
-                bbot_output[idx] = {  # modifying button object for self.send_button()
-                    'buttons': {
-                        'text': buttons_text,
-                        'buttons': buttons
-                    }
-                }
-        return bbot_output

@@ -84,7 +84,7 @@ class ChatScript(ChatbotEngine):
        
     def to_bbot_response(self, response: str) -> dict:
         """
-        Converts Chatscript response to BBOT response speciication
+        Converts Chatscript response to BBOT response specification
         :param response:  Chatscript response
         :return: BBOT response specification dict
         """

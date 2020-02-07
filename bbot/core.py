@@ -168,8 +168,8 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         
         try:
             smokesignal.emit(BBotCore.SIGNAL_GET_RESPONSE_BEFORE, {})
-            self.bot.get_response(request)      # get bot response           
-            self.process_pipeline()             # run pipelin process: this proces changes bot output
+            self.bot.get_response(request)      # get bot response                       
+            self.process_pipeline()             # run pipelin process: this proces changes bot output            
             smokesignal.emit(BBotCore.SIGNAL_GET_RESPONSE_AFTER, {'bbot_response': self.response})  # triggers event: none of these should modify output
         except BBotCoreHalt as e: # this exception is used to do a soft halt
             self.logger.debug(e)  
@@ -183,16 +183,19 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         """
         Executes all processes listed in the pipeline configuration
         """
-        for p in self.pipeline:
+        for p in self.pipeline:            
             self.pipeline[p].process()
 
-    def add_output(self, bbot_output_obj: dict):
+    def add_output(self, bbot_output_obj: dict, add_last: bool=False):
         """      
         Appends a new output object
         """
         self.logger.debug('Adding to output: ' + str(bbot_output_obj))
-        self.response['output'].append(bbot_output_obj)
-
+        if not add_last or len(self.response['output']) == 0:
+            self.response['output'].append(bbot_output_obj) # append output
+        else:
+            self.response['output'][-1] = {**self.response['output'][-1], **bbot_output_obj} # add to last output @TODO should check if it's message type
+            
     def reset_output(self):
         """
         Resets the output
@@ -226,8 +229,8 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         return bbot
 
     @staticmethod
-    def create_request(chan_input: dict, user_id: str, bot_id: str = "",
-                       org_id: str = "", pub_id: str = "") -> dict:
+    def create_request(
+        chan_input: dict, user_id: str, bot_id: str = "", org_id: str = "", pub_id: str = "", channel_id: str = "") -> dict:
         """
         Create a base request.
 
@@ -237,8 +240,7 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         :param org_id: Organization ID
         :return: A dictionary with the given data
         """
-        return {"user_id": user_id, "bot_id": bot_id, "org_id": org_id, "pub_id": pub_id, "input": chan_input}
-
+        return {"user_id": user_id, "bot_id": bot_id, "org_id": org_id, "pub_id": pub_id, "channel_id": channel_id, "input": chan_input}
 
     @staticmethod
     def create_response(output: dict) -> dict:
@@ -305,7 +307,7 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
 
         self.dotbot = dotbot
         self.config = config
-        
+        self.channel_id = None
         self.logger = None        
 
         self.reset()
@@ -320,8 +322,7 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
         self.request = request    
         self.user_id = request.get('user_id', '')
         self.pub_id = request.get('pub_id', '')
-         
-
+        self.channel_id = request.get('channel_id')
         
     @abc.abstractmethod
     def init(self, core: BBotCore) -> None:
@@ -334,6 +335,7 @@ class ChatbotEngine(Plugin, metaclass=abc.ABCMeta):
     def reset(self):
         self.user_id = ''
         self.pub_id = ''
+        self.channel_id = ''
         self.logger_level = ''
         self.is_fallback = False
         self.bot_id = self.dotbot.bot_id
