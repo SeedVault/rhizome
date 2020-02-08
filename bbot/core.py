@@ -257,9 +257,8 @@ class BBotCore(Plugin, metaclass=abc.ABCMeta):
         """Returns all concatenated texts from a bbot response"""
         texts = ''
 
-        for r in bbot_response:
-            response_type = list(r.keys())[0]
-            if response_type == 'text':
+        for r in bbot_response:            
+            if 'text' in r:
                 texts += r['text'] + '.\n' # @TODO improve this
         return texts
 
