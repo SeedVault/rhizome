@@ -156,7 +156,7 @@ class BBotResponseOutput():
             actions = [actions]
 
         for i in range(len(actions)):                
-            if type(actions[i]) is not box.Box: # if it's not a imBack object (dict are box.Box class here)
+            if type(actions[i]) is not box.Box: # if it's not an object (dict are box.Box class here)
                 if type(actions[i]) is str: # and it's a string, apply it as imBack
                     actions[i] = self.imBack(actions[i])
                 else:

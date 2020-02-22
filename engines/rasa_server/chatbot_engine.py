@@ -18,7 +18,7 @@ class RasaServer(ChatbotEngine):
         """
         super().__init__(config, dotbot)
 
-        self.recv = None
+        self.recv = []
 
     def init(self, core: BBotCore):
         """
@@ -49,7 +49,15 @@ class RasaServer(ChatbotEngine):
                 self.core.bbot.text(r['text'])
             if 'image' in r.keys():
                 self.core.bbot.imageCard(r['image'])
-            
+            if 'quick_replies' in r.keys():
+                quick_reply = []
+                for qr in r['quick_replies']:
+                    if qr['type'] == 'postback':
+                        quick_reply.append(self.core.bbot.imBack(qr['title']))
+                    if qr['type'] == 'web_url':
+                        quick_reply.append(self.core.bbot.openUrl(qr['title'], qr['payload']))
+                                                                              
+                self.core.bbot.suggestedActions(quick_reply)
         return self.response
         
     def get_server_type(self):
@@ -73,6 +81,7 @@ class RasaServer(ChatbotEngine):
         return aw
         
     def socketio_server(self, msg):
+        self.recv = []
         server_url = self.dotbot.chatbot_engine['serverUrl']
         user_message_evt = self.dotbot.chatbot_engine.get('userMessageEvt') or 'user_uttered'
         bot_message_evt = self.dotbot.chatbot_engine.get('botMessageEvt') or 'bot_uttered'
@@ -82,7 +91,7 @@ class RasaServer(ChatbotEngine):
         @sio.on(bot_message_evt)
         def on_message(data):
             self.logger.debug("Received '%s'" % data)
-            self.recv = data                
+            self.recv.append(data)
         
         @sio.on('session_confirm')
         def on_message(data):
@@ -93,6 +102,6 @@ class RasaServer(ChatbotEngine):
         sio.call('session_request', {"session_id": [self.user_id]})
         sio.call(user_message_evt, data={"message": msg,"customData":{"language":"en"},"session_id": self.user_id})              
         sio.disconnect()
-        return [self.recv] #@TODO check multiple outputs
+        return self.recv
         
 
